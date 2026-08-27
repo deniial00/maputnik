@@ -1,26 +1,26 @@
-# POC-Prüfbericht
+# POC Verification Report
 
-Prüfdatum: 27. August 2026. Umgebung: macOS ARM64, Node 26.7.0, Chromium 151 / Playwright 1.62.1. Upstream-Basis: `d802049d029e37adfc75e1c8e6b4eecaf0a10ec9`. Lokaler Branch: `feature/embeddable-editor`.
+Verification date: August 27, 2026. Environment: macOS ARM64, Node 26.7.0, Chromium 151 / Playwright 1.62.1. Upstream baseline: `d802049d029e37adfc75e1c8e6b4eecaf0a10ec9`. Local branch: `feature/embeddable-editor`.
 
-## Durchgeführte Prüfungen
+## Checks performed
 
-| Prüfung | Ergebnis |
+| Check | Result |
 |---|---|
-| `npm ci` | Installation aus dem unveränderten Upstream-Lockfile erfolgreich |
-| `npm run build` | Typecheck und ursprünglicher Web-App-Build erfolgreich |
-| `npm run build:embed` | Typecheck und Produktionsbuild des unabhängigen React-Hosts erfolgreich |
-| `npm run lint` | Erfolgreich |
-| `npm run lint-css` | Erfolgreich |
-| `npx stylelint src/editor/editor.scss` | Erfolgreich |
-| `npm run test-unit -- --run` | 50 Tests in 9 Dateien bestanden |
-| Gemeinsamer Browserlauf | 136 Tests bestanden: damals 16 Embed-Tests plus 120 bestehende Regressionstests |
-| Gezielter Abschlusslauf nach zusätzlicher Quellenabsicherung | 25 Tests bestanden: 17 Embed-, 6 Karten- und 2 History-Tests |
-| API-Test-Fixture Typecheck | Separat gegen die Projekt-Compileroptionen erfolgreich |
-| Negative Test-Gegenprobe | Initial-Style-Erwartung absichtlich verfälscht: Test scheitert am falschen Namen. Danach Originaldatei wiederhergestellt und erneut positive Tests ausgeführt. |
-| `git diff --check` | Erfolgreich |
-| Sichtprüfung im Codex-Browser | Echter Editor im Host, Paint-Änderung, Style-Wechsel, Source-Dialog, Layout-Sichtbarkeit und Übernahme der SVG-Farbfilter geprüft |
+| `npm ci` | Successfully installed dependencies from the unchanged upstream lockfile |
+| `npm run build` | Type checking and the original web app build passed |
+| `npm run build:embed` | Type checking and the independent React host production build passed |
+| `npm run lint` | Passed |
+| `npm run lint-css` | Passed |
+| `npx stylelint src/editor/editor.scss` | Passed |
+| `npm run test-unit -- --run` | 50 tests passed across 9 files |
+| Combined browser test run | 136 tests passed: 16 embed tests at that point, plus 120 existing regression tests |
+| Final targeted run after additional source safeguards | 25 tests passed: 17 embed, 6 map, and 2 history tests |
+| API test fixture type checking | Passed separately using the project's compiler options |
+| Negative test control | Deliberately changed the expected initial style: the test failed on the incorrect name. Restored the original file and reran the positive tests successfully. |
+| `git diff --check` | Passed |
+| Visual inspection in the Codex browser | Checked the real editor inside the host, paint changes, style replacement, the source dialog, layout visibility, and SVG color filters |
 
-Insgesamt wurden **17 neue Embed-Tests und 120 unterschiedliche bestehende Browsertests** erfolgreich ausgeführt. Die komplette übrige Upstream-E2E-Suite wurde nicht ausgeführt. Die 120 vorhandenen Tests stammen aus:
+In total, **17 new embed tests and 120 distinct existing browser tests** were run successfully. The remainder of the upstream E2E suite was not run. The 120 existing tests are from:
 
 ```text
 e2e/map.spec.ts
@@ -31,7 +31,7 @@ e2e/modals.spec.ts
 e2e/i18n.spec.ts
 ```
 
-Reproduzierbarer gemeinsamer Lauf auf dem fertigen Stand (nun 137 Tests):
+Command to reproduce the combined run on the completed implementation (now 137 tests):
 
 ```sh
 npm run test -- e2e/embed.spec.ts e2e/map.spec.ts e2e/history.spec.ts \
@@ -39,30 +39,30 @@ npm run test -- e2e/embed.spec.ts e2e/map.spec.ts e2e/history.spec.ts \
   e2e/i18n.spec.ts --workers=3
 ```
 
-Alle Embed-Tests verwenden den echten Editor mit React StrictMode, eine echte MapLibre-Karte und nicht verfügbarem LocalStorage/SessionStorage. Ungefangene Browserfehler lassen den jeweiligen Test scheitern. Der Lifecycle-Test wartet auch den privaten Inspector-Timeout ab. Der zusätzliche Quellen-Test liefert Metadaten verzögert aus und ersetzt währenddessen das Dokument.
+All embed tests use the real editor with React StrictMode, a real MapLibre map, and unavailable LocalStorage/SessionStorage. Uncaught browser errors fail the corresponding test. The lifecycle test also waits for the private inspector timeout to expire. The additional source test delays metadata responses while replacing the document.
 
-## Während der Umsetzung gefundene und behobene Probleme
+## Issues found and fixed during implementation
 
-- Body-Keyup wurde im Konstruktor registriert und nicht entfernt.
-- MapLibre-Instanz, Popup-React-Root und Sprachlistener hatten kein vollständiges Cleanup.
-- CodeMirror wurde beim Unmount nicht zerstört; StrictMode erzeugte doppelte Editoren.
-- Ein privater Inspector-Timeout versuchte nach Unmount `setStyle()` auf einer nicht mehr existierenden Karte aufzurufen. Der instanzlokale Guard verhindert dies.
-- Veraltete Quellenabfragen konnten nach einem Style-Wechsel auf das neue Quellenverzeichnis zugreifen. Abbruchsignale, eingefrorener Abfrage-Snapshot und Ergebnis-Guards verhindern das.
-- Die globale i18next-Initialisierung wurde durch einen Toolbar-Import mitgeladen. Sprachkonfiguration und eingebettete Instanz sind jetzt getrennt.
-- CSS-Vollbildpositionierung, Body-Scroll-Lock und Portals außerhalb des Editors verhinderten eine saubere Host-Einbettung.
+- The body keyup listener was registered in the constructor and never removed.
+- The MapLibre instance, popup React root, and language listener lacked complete cleanup.
+- CodeMirror was not destroyed on unmount; StrictMode created duplicate editors.
+- A private inspector timeout attempted to call `setStyle()` on a removed map after unmount. A guard on each instance prevents this.
+- Stale source requests could access the new source collection after a style replacement. Abort signals, a captured request snapshot, and result guards prevent this.
+- A toolbar import loaded the global i18next initialization. Language configuration and the embedded instance are now separate.
+- Fullscreen CSS positioning, body scroll locking, and portals outside the editor prevented clean host integration.
 
-## Build- und Sicherheitsmeldungen
+## Build and security warnings
 
-Vite warnt weiterhin vor großen Bundles. Der Host-Build enthält den bestehenden Editor inklusive OpenLayers und liegt beim Haupt-JavaScript bei ungefähr **3,43 MB unkomprimiert / 955 KB gzip**, zuzüglich Worker, CSS und Fonts. Dies ist ein POC-Source-Build, keine optimierte Library-Ausgabe. Der zusätzliche Buildordner liegt außerhalb der Beispiel-Root; Vite leert ihn absichtlich nicht automatisch. Für einen Deployment-Artefaktbau ist ein sauberes Buildverzeichnis zu verwenden.
+Vite still warns about large bundles. The host build includes the existing editor, including OpenLayers. Its main JavaScript bundle is approximately **3.43 MB uncompressed / 955 KB gzip**, plus workers, CSS, and fonts. This is a POC built from source, not an optimized library distribution. The additional build directory is outside the example root; Vite intentionally does not empty it automatically. Use a clean build directory when producing deployment artifacts.
 
-`npm audit --json` meldete im bestehenden Lockfile **6 betroffene Abhängigkeiten: 1 niedrig, 4 mittel, 1 hoch**. Gemeldet wurden `@babel/core`, `ajv`, `istanbul-lib-processinfo`, `js-yaml`, `qs` und das transitiv verwendete `uuid`. Der hohe Befund betrifft `js-yaml`. Kein `npm audit fix` und keine Paket-Upgrades wurden ausgeführt, um Upstream- und POC-Änderungen nicht zu vermischen. Vor einem Produktionseinsatz ist eine gesonderte Abhängigkeitsprüfung und Aktualisierung erforderlich. Dies ist kein vollständiges Security-Audit.
+`npm audit --json` reported **6 affected dependencies in the existing lockfile: 1 low, 4 moderate, and 1 high**. The reported packages were `@babel/core`, `ajv`, `istanbul-lib-processinfo`, `js-yaml`, `qs`, and the transitive dependency `uuid`. The high severity finding concerns `js-yaml`. Neither `npm audit fix` nor package upgrades were run, to keep upstream dependency changes separate from the POC. A separate dependency review and update are required before production use. This is not a complete security audit.
 
-## Nicht durch diese Prüfung abgedeckt
+## Not covered by this verification
 
-Desktop-/Backend-Modus, Safari/Firefox, React-Versionen außerhalb des installierten Upstreams, SSR, Multi-Editor, produktives Host-Backend, Authentifizierung, beliebige CSP-Regeln, große reale Styles, Live-Drittanbieter, vollständige Sprite-/Glyphen-/PMTiles-Kombinationen und umfassende OpenLayers-Kompatibilität.
+Desktop/backend mode, Safari/Firefox, React versions other than the installed upstream version, SSR, multiple editors, a production host backend, authentication, arbitrary CSP rules, large real styles, live third-party services, complete sprite/glyph/PMTiles combinations, and comprehensive OpenLayers compatibility.
 
-Globale MapLibre-Initialisierung, Hersteller-CSS und ein kleiner privater Inspector-Timeout bleiben bekannte Kopplungen. Details und Phase-2-Empfehlung: [Integrationsanleitung und Architekturbericht](embeddable-editor.md).
+Global MapLibre initialization, vendor CSS, and a short private inspector timeout remain known dependencies. For details and the phase 2 recommendation, see the [integration guide and architecture report](embeddable-editor.md).
 
-## Übergabe
+## Handoff
 
-Der GitHub-Fork ist [deniial00/maputnik](https://github.com/deniial00/maputnik), der POC-Branch heißt `feature/embeddable-editor`. Die ursprüngliche Quelle bleibt lokal als Remote `origin` erhalten; der persönliche Fork ist als Remote `fork` eingerichtet. Es wurde kein Pull Request an Upstream eröffnet und kein Paket veröffentlicht. Der zusätzliche Patch der lokalen Übergabe enthält Änderungen und neue Dateien; er kann auf der genannten Upstream-Basis mit `git apply` übernommen werden.
+The GitHub fork is [deniial00/maputnik](https://github.com/deniial00/maputnik), and the POC branch is `feature/embeddable-editor`. The original source remains configured locally as the `origin` remote; the personal fork uses the `fork` remote. No upstream pull request has been opened and no package has been published. The additional patch included in the local handoff contains both modified and new files; it can be applied to the upstream baseline above with `git apply`.

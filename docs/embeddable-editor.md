@@ -1,14 +1,14 @@
-# Maputnik als React-Komponente – POC
+# Maputnik as a React Component — POC
 
-## Ergebnis und Ausgangspunkt
+## Outcome and baseline
 
-Maputnik kann ohne iframe als Child Component einer fremden React-Root betrieben werden. Der POC kapselt den bestehenden Editor; Layer-, Source-, Property-, Filter- und JSON-Editoren sowie RevisionStore und MapLibre werden wiederverwendet.
+Maputnik can run as a child component inside a separate React root without an iframe. The POC wraps the existing editor, reusing its layer, source, property, filter, and JSON editors, along with RevisionStore and MapLibre.
 
-Basis: [maplibre/maputnik](https://github.com/maplibre/maputnik), Commit `d802049d029e37adfc75e1c8e6b4eecaf0a10ec9`, Maputnik 3.1.0. Fork: [deniial00/maputnik](https://github.com/deniial00/maputnik). Die POC-Änderungen gehören zum Branch `feature/embeddable-editor`; `main` bleibt der Upstream-Stand. Es wurden keine Pakete veröffentlicht. Das Upstream-Lockfile bleibt unverändert.
+Based on [maplibre/maputnik](https://github.com/maplibre/maputnik), commit `d802049d029e37adfc75e1c8e6b4eecaf0a10ec9`, Maputnik 3.1.0. Fork: [deniial00/maputnik](https://github.com/deniial00/maputnik). The POC changes are on `feature/embeddable-editor`; `main` remains at the upstream baseline. No packages have been published. The upstream lockfile is unchanged.
 
-## Starten
+## Getting started
 
-Fork mit dem POC-Branch klonen und die Demo starten:
+Clone the fork's POC branch and start the demo:
 
 ```sh
 git clone --branch feature/embeddable-editor https://github.com/deniial00/maputnik.git
@@ -17,12 +17,12 @@ npm ci
 npm run start:embed
 ```
 
-Die separate Host-Anwendung läuft unter `http://localhost:5173/`. Sie importiert `src/editor` als Quellcode, hat einen eigenen Einstiegspunkt, eine eigene React-Root und eine eigene Vite-Konfiguration. Ihre Abhängigkeiten kommen aus der Installation im Repository-Root; im Beispielordner ist kein weiteres `npm install` notwendig.
+The separate host application runs at `http://localhost:5173/`. It imports `src/editor` directly from source and has its own entry point, React root, and Vite configuration. Its dependencies come from the installation at the repository root; no additional `npm install` is needed in the example directory.
 
 ```sh
-npm run build:embed         # Typecheck + Host-Produktionsbuild nach dist-embed/
-npm run start              # ursprüngliche Web-App auf :8888/maputnik/
-npm run build              # ursprünglicher Produktionsbuild nach dist/
+npm run build:embed         # Type checking + host production build in dist-embed/
+npm run start              # Original web app at :8888/maputnik/
+npm run build              # Original production build in dist/
 npx playwright install chromium
 npm run test -- e2e/embed.spec.ts --workers=2
 npm run test-unit -- --run
@@ -30,9 +30,9 @@ npm run lint
 npm run lint-css
 ```
 
-Der Test-Runner startet beide Devserver automatisch oder verwendet bereits laufende Server. Der Embed-Test benötigt auch bei `E2E_NO_WEBSERVER=1` den Host auf Port 5173. Das Upstream-`.nvmrc` nennt Node 22.13; geprüft wurde hier mit Node 26.7.0, React 19.2.8, MapLibre GL 6.5.0 und Vite 8.2.2 aus dem vorhandenen Lockfile.
+The test runner starts both development servers automatically or reuses running servers. The embed test requires the host on port 5173 even when `E2E_NO_WEBSERVER=1`. The upstream `.nvmrc` specifies Node 22.13; this POC was tested with Node 26.7.0, React 19.2.8, MapLibre GL 6.5.0, and Vite 8.2.2 from the existing lockfile.
 
-Die Demo verwendet absichtlich lokale illustrative GeoJSON-Geometrie. Es gibt keine Abhängigkeit von einer Basiskarte, einem API-Schlüssel oder einem Maputnik-Backend. „Snapshot speichern“ speichert eine Kopie im React-State des Hosts und zeigt sie als JSON. Dies ist keine dauerhafte Speicherung; nach einem Reload ist sie weg.
+The demo deliberately uses local, illustrative GeoJSON geometry. It does not depend on a basemap, API key, or Maputnik backend. “Save snapshot” stores a copy in the host's React state and displays it as JSON. This is not persistent storage; the copy is lost on reload.
 
 ## Integration
 
@@ -53,9 +53,9 @@ export function StyleDesigner({ initialStyle }: { initialStyle: StyleSpecificati
     <button disabled={!dirty} onClick={() => {
       const style = editor.current?.getStyle();
       if (!style) return;
-      setSaved(style); // Hier kann der Host seinen eigenen API-Aufruf ausführen.
+      setSaved(style); // The host can make its own API call here.
       setDirty(false);
-    }}>Speichern</button>
+    }}>Save</button>
     <div style={{ height: 650 }}>
       <MaputnikEditor
         ref={editor}
@@ -68,101 +68,101 @@ export function StyleDesigner({ initialStyle }: { initialStyle: StyleSpecificati
 }
 ```
 
-Der Import lädt die Editor-SCSS automatisch. Nicht zusätzlich `src/index.jsx` oder `src/styles/index.scss` importieren: Diese gehören zur Vollbild-Web-App. Der Host braucht eine definierte Höhe, empfohlen mindestens 600 px; für den bestehenden Desktop-Editor sind etwa 1000 px Breite sinnvoll. Die Komponente selbst hat eine Mindesthöhe von 400 px. Das Beispiel scrollt den Editor bei schmaleren Fenstern horizontal.
+The import loads the editor SCSS automatically. Do not additionally import `src/index.jsx` or `src/styles/index.scss`: those belong to the fullscreen web app. The host needs an explicit height, preferably at least 600 px; approximately 1000 px of width is practical for the existing desktop editor. The component itself has a minimum height of 400 px. The example allows horizontal scrolling of the editor in narrower windows.
 
-Für eine andere Vite-Anwendung müssen React/ReactDOM auf dieselbe Installation aufgelöst werden (`resolve.dedupe` im Beispiel). Sass, JSON-Importe, Vites `?worker&url` und Asset-Importe müssen unterstützt werden. `global: "globalThis"` wird wie im Upstream benötigt. Der vorhandene RTL-Plugin-Asset muss unter der `BASE_URL` bereitstehen; `copy-rtl-text-plugin` und die Demo-Konfiguration erledigen dies. Andere Bundler und React-Versionen sind nicht Bestandteil dieser Prüfung.
+In another Vite application, React and ReactDOM must resolve to the same installation (`resolve.dedupe` in the example). The build must support Sass, JSON imports, Vite's `?worker&url`, and asset imports. `global: "globalThis"` is required, as in upstream. The existing RTL plugin asset must be available under `BASE_URL`; `copy-rtl-text-plugin` and the demo configuration handle this. Other bundlers and React versions are outside the scope of this verification.
 
-## API-Vertrag
+## API contract
 
-| API | Verhalten |
+| API | Behavior |
 |---|---|
-| `initialStyle` | Vollständiger MapLibre-Style; wird beim Mount kopiert. Spätere Prop-Änderungen ersetzen das Dokument nicht. |
-| `onStyleChange?: () => void` | Signal nach einer committed Style-Änderung, einschließlich Undo/Redo, `setStyle` und `reset`. Kein Signal für Initialisierung, reine Layer-Auswahl, Kartenbewegung oder identische Dokumente. |
-| `getStyle()` | Synchrone, unabhängige tiefe Kopie des vollständigen Editor-Dokuments. Enthält auch unbekannte Metadaten, URLs und vom Editor bearbeitete Werte. |
-| `setStyle(style)` | Kopiert und ersetzt das Dokument; setzt Auswahl, Quelldaten-Cache, Dateihandle und Undo-Historie zurück. Unmittelbar danach liefert `getStyle()` bereits das neue Dokument, auch vor dem React-Commit. Kartenposition wird aus dem neuen Style übernommen, fehlend auf `[0,0]` / Zoom `0` gesetzt. |
-| `reset()` | Wie `setStyle`, aber mit dem beim Mount gespeicherten ursprünglichen Style. `setStyle` ändert diese Reset-Basis nicht. |
-| `className`, `style` | Optionale Attribute für den äußeren Container. Kein umfassendes Theming. |
+| `initialStyle` | Complete MapLibre style, copied on mount. Later prop changes do not replace the document. |
+| `onStyleChange?: () => void` | Signal after a committed style change, including undo/redo, `setStyle`, and `reset`. No signal for initialization, layer selection alone, map movement, or identical documents. |
+| `getStyle()` | Synchronous, independent deep copy of the complete editor document, including unknown metadata, URLs, and values edited in the UI. |
+| `setStyle(style)` | Copies and replaces the document; clears selection, the source data cache, file handle, and undo history. An immediate `getStyle()` call returns the new document, even before the React commit. The map position comes from the new style, defaulting to `[0,0]` / zoom `0` when absent. |
+| `reset()` | Same as `setStyle`, but uses the original style captured on mount. `setStyle` does not change this reset baseline. |
+| `className`, `style` | Optional attributes for the outer container. Not a comprehensive theming API. |
 
-`StyleSpecification` kommt direkt aus `@maplibre/maplibre-gl-style-spec`. Kein vollständig controlled Pattern, keine permanente Rückkopplung vom Host-Style in den Editor. Ref-Methoden erst nach dem Mount aufrufen; nach dem Unmount ist die Ref `null`.
+`StyleSpecification` comes directly from `@maplibre/maplibre-gl-style-spec`. The component is uncontrolled; the host's style is not continuously fed back into the editor. Call ref methods only after mount; the ref is `null` after unmount.
 
-`getStyle()` liest absichtlich das Editor-Dokument, nicht `map.getStyle()`: Die Karte kann vorübergehend einen für die Vorschau bereinigten Style oder einen Inspect-Style enthalten. Maputnik zeigt Validierungsfehler wie bisher an. Der Host muss vor dauerhafter Speicherung bei Bedarf selbst validieren; die API verspricht keine ausschließlich gültigen Dokumente.
+`getStyle()` deliberately reads the editor document, not `map.getStyle()`: the map may temporarily contain a style sanitized for preview or an inspection style. Maputnik continues to display validation errors as before. The host must perform its own validation before persistent storage if needed; the API does not guarantee that all returned documents are valid.
 
-### Warum ein Änderungssignal?
+### Why a change signal?
 
-Kein zusätzliches vollständiges Style-JSON pro Callback. Tiefe Kopien entstehen an den API-Grenzen (`initialStyle`, `setStyle`, `getStyle`). Die vorhandene Style-Validierung, MapLibre-Diffing, History und ein Gleichheitsvergleich bleiben bestehen. Dies ist keine Aussage über konstante Laufzeit oder geringe Speichernutzung bei riesigen Styles. Ein Lasttest mit realen großen Styles gehört in Phase 2. Mehrere Änderungen in einem React-Batch können mehrere Signale auslösen; der Host sollte das Signal als Dirty-Markierung verwenden, nicht als Event-Sourcing-Protokoll.
+The callback does not carry an additional complete style JSON object. Deep copies are made at the API boundaries (`initialStyle`, `setStyle`, `getStyle`). Existing style validation, MapLibre diffing, history, and an equality comparison remain in place. This does not imply constant runtime or low memory usage for very large styles. Load testing with large real styles belongs in phase 2. Multiple changes in a React batch may produce multiple signals; the host should use the signal to mark the document dirty, not as an event sourcing log.
 
-## Architektur und Kopplungen
+## Architecture and dependencies
 
 ```text
-Externer React-Host
-  └── MaputnikEditor: öffentliche Ref + initialer Snapshot + CSS/Sprach-Scope
+External React host
+  └── MaputnikEditor: public ref + initial snapshot + CSS/language scope
        └── App (embedded)
-            ├── vorhandener Style-State + RevisionStore
-            ├── vorhandene Layer-/Source-/Property-/Filter-/JSON-UI
-            └── eigene MapLibre-Karte + ResizeObserver
+            ├── Existing style state + RevisionStore
+            ├── Existing layer/source/property/filter/JSON UI
+            └── Dedicated MapLibre map + ResizeObserver
 
-src/index.jsx → App (normal) → vorhandener StyleStore / URL / Desktop-Modus
+src/index.jsx → App (standalone) → Existing StyleStore / URL / desktop mode
 ```
 
-`App.tsx` ist weiter der interne Editor-Kern. Seine Extraktion in viele neue Module wurde bewusst vermieden. Ein internes `embedded`-Flag schaltet nur App-Integrationen ab. Die ursprüngliche Web-App muss im POC noch nicht Consumer der neuen öffentlichen Komponente werden.
+`App.tsx` remains the internal editor core. The POC deliberately avoids extracting it into many new modules. An internal `embedded` flag disables only the application integrations. The original web app does not yet need to consume the new public component.
 
-| Bereich | Upstream-Kopplung | Anpassung im POC / verbleibende Grenze |
+| Area | Upstream dependency | POC adaptation / remaining limitation |
 |---|---|---|
-| Persistenz | `createStyleStore` lädt Browser-Storage oder Desktop-API. `StyleStore` greift direkt auf LocalStorage zu. | Im Embed-Modus wird die Factory nie ausgeführt; `saveStyle` persistiert dort nicht. Kein Memory-Store als Storage-Ersatz nötig. |
-| URL / History | `App` liest/schreibt Suchparameter; MapLibre schreibt den Hash. | Beide Integrationen im Embed-Modus deaktiviert. Host-Routing bleibt unverändert. |
-| Tastatur | Anonymer Body-Keyup im Konstruktor; globaler Keydown. | Registrierung nach Mount, Removal beim Unmount, Shortcut-Scope auf Editor begrenzt. Host-Inputs behalten Undo; Eingabefelder und CodeMirror nutzen ihr eigenes Undo. |
-| CSS | Globale Resets, `html`/`body`, Vollbild-Layout und fixe Toolbar. | SCSS unter `.maputnik-editor` kompiliert; Toolbar/Hauptfläche relativ zum Container. Kein `body { overflow: hidden }` im Host. |
-| Dialoge | Portals unter `body`, globales Scroll-Lock. | Vorhandenes AriaModal rendert in einen Slot im Editor; kein Body-Scroll-Lock. Dialog-Fokusfalle bleibt absichtlich aktiv. Nur ein Editor unterstützt. |
-| Sprache | Globaler i18next-Detector mit Storage-Cache; `body.dir` im Render. | Eigene i18next-Instanz ohne Detector/Storage; Sprache initial Englisch und über bestehende Toolbar umstellbar. Richtung am Editor-Layout, nicht am Host-Body. |
-| Karte | Eigene MapLibre-Instanz, bisher ohne `remove()`. | Map wird beim Unmount entfernt, ResizeObserver getrennt, Popup-React-Root freigegeben und Sprachlistener/Inspector-Timer bereinigt. |
-| Inspector | `maplibre-gl-inspect` 1.9.0 hat einen privaten, nicht abbrechbaren Timeout. | Instanzlokaler Render-Guard verhindert Zugriff auf entfernte Karten. Der kurze interne Timeout läuft noch aus; ein vollständiger Fix wäre upstream nötig. |
-| CodeMirror / Farbe | Fehlendes `destroy()`, throttled Farb-Callback. | CodeMirror wird zerstört und Farb-Callback abgebrochen. Farbpicker-Koordinaten beziehen sich im Embed-Modus auf den Container. |
-| Quellen-Metadaten | Asynchrone Fetches und LayerWatcher-Throttle. | Abbruchsignal bei Style-Ersatz und Unmount für eigene HTTP-Fetches; veraltete Ergebnisse werden ignoriert; Watcher wird geleert/abgebrochen. PMTiles-/Inspector-interne Requests sind nicht vollständig von uns abbrechbar. |
-| Import / Export | File-Picker, Download, optionale öffentliche Style-URLs. | Bestehende Funktionen bleiben erhalten; Browser-APIs werden nach Benutzeraktion verwendet. Host-Speichern erfolgt unabhängig per Ref. |
-| OpenLayers | Alternativer Renderer über Style-Metadaten. | Weiter vorhanden, grundlegendes Disposal ergänzt. POC-Akzeptanz und Demo fokussieren MapLibre; OpenLayers ist nicht umfassend qualifiziert. |
+| Persistence | `createStyleStore` loads browser storage or the desktop API. `StyleStore` accesses LocalStorage directly. | The factory is never called in embedded mode; `saveStyle` does not persist there. No memory store is needed as a storage substitute. |
+| URL / history | `App` reads/writes search parameters; MapLibre writes the hash. | Both integrations are disabled in embedded mode. Host routing is unchanged. |
+| Keyboard | Anonymous body keyup listener in the constructor; global keydown listener. | Listeners are registered after mount and removed on unmount; shortcuts are scoped to the editor. Host inputs retain undo; input fields and CodeMirror use their own undo. |
+| CSS | Global resets, `html`/`body`, fullscreen layout, and a fixed toolbar. | SCSS is compiled under `.maputnik-editor`; the toolbar and main area are positioned relative to the container. No `body { overflow: hidden }` in the host. |
+| Dialogs | Portals under `body`, global scroll locking. | Existing AriaModal renders into a slot inside the editor; no body scroll locking. The dialog focus trap intentionally remains active. Only one editor is supported. |
+| Language | Global i18next detector with a storage cache; `body.dir` set during render. | Dedicated i18next instance without a detector or storage; starts in English and can be changed through the existing toolbar. Direction is applied to the editor layout, not the host body. |
+| Map | Dedicated MapLibre instance, previously without `remove()`. | The map is removed on unmount, ResizeObserver is disconnected, the popup React root is released, and language listeners/inspector timers are cleaned up. |
+| Inspector | `maplibre-gl-inspect` 1.9.0 has a private timeout that cannot be cancelled. | A render guard on each instance prevents access to removed maps. The short internal timeout still expires naturally; a complete fix would require an upstream change. |
+| CodeMirror / color | Missing `destroy()`, throttled color callback. | CodeMirror is destroyed and the color callback is cancelled. Color picker coordinates are relative to the container in embedded mode. |
+| Source metadata | Asynchronous fetches and LayerWatcher throttling. | Own HTTP fetches receive an abort signal on style replacement and unmount; stale results are ignored; the watcher is cleared/cancelled. Requests inside PMTiles/Inspector cannot all be cancelled by this component. |
+| Import / export | File picker, downloads, optional public style URLs. | Existing features remain available; browser APIs are used following user actions. Host saving is independent and uses the ref. |
+| OpenLayers | Alternative renderer selected through style metadata. | Still available, with basic disposal added. POC acceptance and the demo focus on MapLibre; OpenLayers has not been comprehensively tested. |
 
-### Verbleibende globale Abhängigkeiten
+### Remaining global dependencies
 
-Die SVG-Farbfilter der eigenständigen HTML-Shell werden im Embed-Einstieg mit eigenen IDs mitgeliefert.
+The embedded entry point includes the standalone HTML shell's SVG color filters with dedicated IDs.
 
-Kein Shadow DOM: Aggressive globale Host-CSS-Regeln können weiterhin in den Editor hineinwirken. Vendor-CSS von MapLibre, Geocoder und OpenLayers ist weiterhin anhand seiner Herstellerklassen global; Hosts mit weiteren Karten derselben Bibliotheken müssen Konflikte prüfen. Roboto-Font-Faces bleiben global registriert. Autocomplete-Menüs verwenden teilweise weiterhin die Fensterhöhe, sodass sie an Containergrenzen abgeschnitten werden können.
+There is no Shadow DOM: aggressive global host CSS can still affect the editor. Vendor CSS from MapLibre, Geocoder, and OpenLayers remains global under the libraries' own classes; hosts using additional maps from those libraries must check for conflicts. Roboto font faces remain globally registered. Some autocomplete menus still use the window height and may be clipped at container boundaries.
 
-MapLibre-Worker-URL, RTL-Plugin und PMTiles-Protokoll werden weiterhin auf Modulebene bzw. beim Karten-Mount registriert. Das ist ein bewusster Rest der Upstream-Architektur; Hosts mit eigener MapLibre-Konfiguration benötigen eine weitere Entkopplung. Ein benötigtes `window.Buffer`-Polyfill wird nur ergänzt, wenn es nicht bereits existiert. Der Source-Import ist browsergebunden und nicht SSR-sicher.
+The MapLibre worker URL, RTL plugin, and PMTiles protocol are still registered at module scope or when the map mounts. This is an intentional remainder of the upstream architecture; hosts with their own MapLibre configuration need further decoupling. The required `window.Buffer` polyfill is added only if it does not already exist. Importing the source requires a browser environment and is not SSR safe.
 
-### Externe Ressourcen
+### External resources
 
-`sources`, `sprite`, `glyphs`, `layers` und `metadata` werden nicht durch ein eigenes Datenmodell ersetzt. Die Karte lädt Quellen, Sprites und Glyphen selbst; es gibt keinen neuen Proxy und keinen Maputnik-Backend-Zwang. CORS, CSP, Erreichbarkeit und erforderliche Tokens bleiben Verantwortung des Hosts bzw. Ressourcenanbieters. Relative Ressourcen-URLs werden im Kontext des Host-Ursprungs aufgelöst. Die vorhandene Maputnik-Token-Ersetzung bleibt aktiv.
+`sources`, `sprite`, `glyphs`, `layers`, and `metadata` are not replaced by a custom data model. The map loads sources, sprites, and glyphs itself; there is no new proxy or required Maputnik backend. CORS, CSP, availability, and required tokens remain the responsibility of the host or resource provider. Relative resource URLs resolve in the context of the host origin. Existing Maputnik token substitution remains active.
 
-Der URL-GeoJSON-Pfad wird mit echtem MapLibre und einer abgefangenen HTTP-Antwort getestet. Live-Drittanbieter, PMTiles-Archive und vollständige Sprite-/Glyphen-Renderkombinationen sind nicht umfassend getestet. Multi-Sprite-Styles werden an MapLibre weitergereicht; die vorhandene Icon-Metadaten-Vorschlagsliste unterstützt im POC nur den einfachen String-Sprite.
+The URL GeoJSON path is tested with real MapLibre and an intercepted HTTP response. Live third-party services, PMTiles archives, and complete sprite/glyph rendering combinations have not been comprehensively tested. Multi-sprite styles are passed through to MapLibre; the existing icon metadata suggestion list supports only a simple string sprite in this POC.
 
-## Tests und Akzeptanz
+## Tests and acceptance
 
-Die automatischen Embed-Tests liegen in `e2e/embed.spec.ts`, der zugehörige Driver in `e2e/embed-driver.ts`. Das kleine API-Fixture unter `examples/react-embed/tests` wird nur vom Devserver geladen und ist nicht Teil des Produktionsbuilds. Es verwendet denselben echten Editor, kein UI-Mock. Jeder Embed-Test läuft mit werfenden LocalStorage- und SessionStorage-Gettern; ungefangene Browserfehler werden mitgeprüft.
+Automated embed tests are in `e2e/embed.spec.ts`, with the corresponding driver in `e2e/embed-driver.ts`. The small API fixture under `examples/react-embed/tests` is loaded only by the development server and is not included in the production build. It uses the same real editor, not a UI mock. Every embed test runs with LocalStorage and SessionStorage getters that throw; uncaught browser errors are also checked.
 
-| Kriterium | Nachweis |
+| Criterion | Evidence |
 |---|---|
-| AC1 Mounting | Fremde React-Root, kein iframe, React StrictMode |
-| AC2 Initial Style | Vollständiger initialer Style, korrekte Startposition |
-| AC3 Editor | Paint/Layout, Layer hinzufügen/auswählen, Sources-Dialog, MapLibre-Style-Update und Undo |
-| AC4 Auslesen | Snapshot inklusive Metadaten/Quellen; Mutationen an Rückgabewerten isoliert |
-| AC5 Änderung | Dirty-Signal, aktueller Callback, identische Dokumente ohne Signal |
-| AC6 Ersetzen | `setStyle` unmittelbar lesbar, neue History-Basis, `reset` zur Mount-Basis |
-| AC7 Backend | Lokale Demo ohne Backend; externe GeoJSON-Quelle über MapLibre |
-| AC8 Persistenz | Tests mit nicht verfügbarem Storage; kein Storage-Fallback erforderlich |
-| AC9 Bestehende App | Eigener Produktionsbuild und vorhandene Regressionstests |
+| AC1 Mounting | Separate React root, no iframe, React StrictMode |
+| AC2 Initial style | Complete initial style, correct initial map position |
+| AC3 Editor | Paint/layout, adding/selecting layers, sources dialog, MapLibre style updates, and undo |
+| AC4 Reading | Snapshot includes metadata/sources; mutations of returned values are isolated |
+| AC5 Changes | Dirty signal, current callback, no signal for identical documents |
+| AC6 Replacement | `setStyle` immediately readable, new history baseline, `reset` to the mount baseline |
+| AC7 Backend | Local demo without a backend; external GeoJSON source through MapLibre |
+| AC8 Persistence | Tests with unavailable storage; no storage fallback required |
+| AC9 Existing app | Separate production build and existing regression tests |
 
-Die abschließenden ausgeführten Checks und verbleibenden Einschränkungen stehen in [verification.md](verification.md).
+Completed checks and remaining limitations are documented in [verification.md](verification.md).
 
-## Bewertung und Phase 2
+## Assessment and phase 2
 
-| Kriterium | Bewertung | Begründung |
+| Criterion | Assessment | Rationale |
 |---|---|---|
-| Aufwand für initiale Extraktion | mittel | Style-/UI-Kern gut wiederverwendbar; Lifecycle und globale Effekte erfordern mehrere gezielte Änderungen. |
-| Änderungen an Maputnik | mittel | Keine zweite UI, aber App, Karte, Dialoge und einzelne Eingabekomponenten berührt. |
-| Upstream-Mergefähigkeit | mittel | Kleine, lokalisierte Anpassungen; zentraler `App`-Code bleibt ein Konfliktpunkt. |
-| Globale Abhängigkeiten | mittel | URL/Storage/Body isoliert; Worker/Protokoll/Vendor-CSS/Polyfill bleiben. |
-| React-Integration | gut | Uncontrolled API, stabile Ref, Snapshot-Grenzen, StrictMode-Tests. |
-| API-Komplexität | gering | Ein Initial-Prop, ein Signal, drei Methoden. |
-| Wartbarkeit des Forks | mittel | POC überschaubar; globale Initialisierung und privater MapLibre-/Inspector-Zugriff bleiben Risiken. |
+| Initial extraction effort | Medium | The style/UI core is reusable; lifecycle and global effects require several targeted changes. |
+| Changes to Maputnik | Medium | No second UI, but changes touch App, the map, dialogs, and individual input components. |
+| Ease of merging future upstream changes | Medium | Small, localized adaptations; central `App` code remains a potential conflict point. |
+| Global dependencies | Medium | URL/storage/body behavior is isolated; worker/protocol/vendor CSS/polyfill dependencies remain. |
+| React integration | Good | Uncontrolled API, stable ref, snapshot boundaries, StrictMode tests. |
+| API complexity | Low | One initial prop, one signal, three methods. |
+| Fork maintainability | Medium | The POC is manageable; global initialization and access to private MapLibre/Inspector internals remain risks. |
 
-**Empfehlung: Phase 2 ist technisch sinnvoll**, wenn das Ziel eine einzelne, browserbasierte Desktop-Einbettung ist. Vor einer produktiven Library sollten App-Integrationen als Adapter extrahiert, Karten-Globals konfigurierbar gemacht, Portal/CSS-Isolation vervollständigt und ein Library-Build mit Peer Dependencies, Typdeklarationen und explizitem CSS-/Worker-Export ergänzt werden. Danach folgen große reale Styles, Host-Router, eigene Host-i18n, strenge CSP, Resize-Szenarien und Browser-Matrix. Multi-Editor, SSR, vollständiges Theming und eine externe Karteninstanz bleiben eigene Arbeitspakete.
+**Recommendation: phase 2 is technically worthwhile** for embedding a single editor in a desktop browser application. Before producing a production library, extract application integrations into adapters, make map globals configurable, complete portal/CSS isolation, and add a library build with peer dependencies, type declarations, and explicit CSS/worker exports. Then test large real styles, host routers, host i18n, strict CSP, resize scenarios, and a browser matrix. Multiple editors, SSR, comprehensive theming, and an external map instance remain separate work items.

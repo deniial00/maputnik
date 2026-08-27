@@ -139,12 +139,12 @@ describe("embedded editor UI in the host demo", () => {
 
   test("paint edits reach the host snapshot and dirty state", async () => {
     await when.editBackground();
-    await then(get.elementByTestId("host:dirty")).shouldContainText("Ungespeicherte");
+    await then(get.elementByTestId("host:dirty")).shouldHaveText("Unsaved changes");
     await when.click("host:save");
     await then(get.snapshot()).shouldDeepNestedInclude({...initialStyle, layers: [
       {...initialStyle.layers[0], paint: {"background-color": "#bb3355"}}, ...initialStyle.layers.slice(1),
     ]});
-    await then(get.elementByTestId("host:dirty")).shouldContainText("Keine offenen");
+    await then(get.elementByTestId("host:dirty")).shouldHaveText("No unsaved changes");
   });
 
   test("layout visibility edits reach the host", async () => {
@@ -178,7 +178,7 @@ describe("embedded editor UI in the host demo", () => {
     await when.typeKeys("{ctrl}z");
     await when.typeText("osd?");
     await then(get.element(".maputnik-modal")).shouldNotExist();
-    await then(get.elementByTestId("host:changes")).shouldHaveText("0 Signale");
+    await then(get.elementByTestId("host:changes")).shouldHaveText("0 signals");
     await then(get.element("body")).shouldHaveCss("overflow", "visible");
     await then(get.element(".host-intro h1")).shouldHaveCss("font-size", "31px");
   });
