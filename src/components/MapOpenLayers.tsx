@@ -147,6 +147,12 @@ class MapOpenLayersInternal extends React.Component<MapOpenLayersInternalProps, 
     );
   }
 
+  componentWillUnmount() {
+    this.updateStyle.cancel();
+    this.map?.dispose();
+    this.map = null;
+  }
+
   closeOverlay = (e: any) => {
     e.target.blur();
     this.overlay!.setPosition(undefined);

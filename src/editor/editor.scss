@@ -1,0 +1,30 @@
+@use 'sass:meta';
+@use '../styles/vars';
+
+// Reuse the upstream styles, but never apply their html/body reset to the host.
+.maputnik-editor {
+  @include meta.load-css('../styles/index');
+
+  position: relative;
+  isolation: isolate;
+  contain: layout paint;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  overflow: hidden;
+  box-sizing: border-box;
+  font: #{vars.$font-size-5}/1 vars.$font-family;
+  color: vars.$color-white;
+  background: vars.$color-black;
+
+  .maputnik-layout { height: 100%; }
+
+  .maputnik-toolbar,
+  .maputnik-layout-main,
+  .maputnik-layout-bottom { position: absolute; }
+
+  .maputnik-layout-list { flex-shrink: 0; }
+  .maputnik-layout-drawer { flex-shrink: 0; }
+  .maputnik-map__container { min-width: 0; }
+  .maputnik-modal { max-height: 100%; }
+}

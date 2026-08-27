@@ -18,9 +18,9 @@ export class ZoomControl {
     return this._container;
   }
 
-  updateZoomLevel() {
+  updateZoomLevel = () => {
     this._textEl!.innerHTML = this._map!.getZoom().toFixed(2);
-  }
+  };
 
   setLabel(label: string) {
     this._container!.innerHTML = `
@@ -31,10 +31,11 @@ export class ZoomControl {
   }
 
   addEventListeners (){
-    this._map!.on("render", () => this.updateZoomLevel());
+    this._map!.on("render", this.updateZoomLevel);
   }
 
   onRemove() {
+    this._map?.off("render", this.updateZoomLevel);
     this._container!.parentNode!.removeChild(this._container!);
     this._map = undefined;
   }

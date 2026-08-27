@@ -185,6 +185,7 @@ async function centerOf(locator: Locator): Promise<{ x: number; y: number }> {
  * It is used by the MaputnikDriver to implement the Maputnik-specific test helpers.
  */
 export class PlaywrightHelper {
+  private pageErrors: string[] = [];
   private readonly recordedRequests = new Map<string, Request[]>();
 
   private get page(): Page {
@@ -218,6 +219,19 @@ export class PlaywrightHelper {
   public then = <T>(target: T): Assertable<T> => new Assertable(target);
 
   public given = {
+    trackPageErrors: () => {
+      this.pageErrors = [];
+      this.page.on("pageerror", error => this.pageErrors.push(error.message));
+    },
+    // Generic setup for integrations which must work with unavailable storage.
+    unavailableStorage: () => this.page.addInitScript(() => {
+      Object.defineProperty(window, "localStorage", {get() {
+        throw new DOMException("Storage disabled by test", "SecurityError");
+      }});
+      Object.defineProperty(window, "sessionStorage", {get() {
+        throw new DOMException("Storage disabled by test", "SecurityError");
+      }});
+    }),
     /**
      * Removes the File System Access API so the app falls back to a plain
      * <input type="file">, the way Firefox and Safari behave. Must be called
@@ -243,21 +257,28 @@ export class PlaywrightHelper {
       url: string | RegExp;
       response: unknown | { fixture: string };
       alias?: string;
+      delayMs?: number;
     }) => {
       const { url, response, alias } = options;
       if (alias) this.recordedRequests.set(alias, []);
-      await this.page.route(url, (route) => {
+      await this.page.route(url, async (route) => {
         if (alias) this.recordedRequests.get(alias)!.push(route.request());
         const body =
           response && typeof response === "object" && "fixture" in (response as any)
             ? this.readFixture((response as { fixture: string }).fixture)
             : response;
-        route.fulfill({ json: body });
+        if (options.delayMs) await new Promise(resolve => setTimeout(resolve, options.delayMs));
+        await route.fulfill({ json: body });
       });
     },
   };
 
   public when = {
+    fillByName: (name: string, value: string) => this.page.locator(`input[name="${name}"]`).fill(value),
+    checkRadio: (name: string) => this.page.locator("label").filter({
+      has: this.page.getByRole("radio", {name, exact: true}),
+    }).click(),
+    evaluate: <A, R>(fn: (arg: A) => R | Promise<R>, arg: A) => this.page.evaluate(fn as (arg: any) => R | Promise<R>, arg),
     visit: async (url: string) => {
       // Snapshot coverage before navigating, since a full page load resets it.
       await recordCoverageChunk(this.page);
@@ -437,6 +458,9 @@ export class PlaywrightHelper {
   };
 
   public get = {
+    pageErrors: () => new Query(async () => this.pageErrors),
+    pageValue: <T>(fn: () => T) => new Query<T>(() => this.page.evaluate(fn)),
+    location: () => new Query<string>(async () => this.page.url()),
     element: (selector: string) => this.page.locator(selector),
 
     localStorageItem: (key: string) =>

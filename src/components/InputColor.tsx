@@ -1,4 +1,5 @@
 import React from "react";
+import { EditorScopeContext } from "../editor/environment";
 import Color from "color";
 import {ChromePicker, type ColorResult} from "react-color";
 import lodash from "lodash";
@@ -20,18 +21,18 @@ export type InputColorProps = {
 
 /*** Number fields with support for min, max and units and documentation*/
 export class InputColor extends React.Component<InputColorProps> {
+  static contextType = EditorScopeContext;
+  declare context: React.ContextType<typeof EditorScopeContext>;
+
   state = {
     pickerOpened: false
   };
   colorInput: HTMLInputElement | null = null;
 
-  constructor (props: InputColorProps) {
-    super(props);
-    this.onChangeNoCheck = lodash.throttle(this.onChangeNoCheck, 1000/30);
-  }
+  onChangeNoCheck = lodash.throttle((v: string) => this.props.onChange(v), 1000/30);
 
-  onChangeNoCheck(v: string) {
-    this.props.onChange(v);
+  componentWillUnmount() {
+    this.onChangeNoCheck.cancel();
   }
 
   //TODO: I much rather would do this with absolute positioning
@@ -41,9 +42,10 @@ export class InputColor extends React.Component<InputColorProps> {
     const elem = this.colorInput;
     if(elem) {
       const pos = elem.getBoundingClientRect();
+      const scope = this.context?.current?.getBoundingClientRect();
       return {
-        top: pos.top,
-        left: pos.left + 196,
+        top: pos.top - (scope?.top ?? 0),
+        left: pos.left + 196 - (scope?.left ?? 0),
       };
     } else {
       return {

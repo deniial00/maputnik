@@ -4,6 +4,7 @@ import { type WithTranslation, withTranslation } from "react-i18next";
 import { IconContext } from "react-icons";
 
 type AppLayoutInternalProps = {
+  embedded?: boolean
   toolbar: React.ReactElement
   layerList: React.ReactElement
   layerEditor?: React.ReactElement
@@ -16,10 +17,10 @@ type AppLayoutInternalProps = {
 class AppLayoutInternal extends React.Component<AppLayoutInternalProps> {
 
   render() {
-    document.body.dir = this.props.i18n.dir();
+    if (!this.props.embedded) document.body.dir = this.props.i18n.dir();
 
     return <IconContext.Provider value={{size: "14px"}}>
-      <div className="maputnik-layout">
+      <div className="maputnik-layout" dir={this.props.i18n.dir()}>
         {this.props.toolbar}
         <div className="maputnik-layout-main">
           {this.props.codeEditor && <div className="maputnik-layout-code-editor">

@@ -3,17 +3,7 @@ import detector from "i18next-browser-languagedetector";
 import resourcesToBackend from "i18next-resources-to-backend";
 import { initReactI18next } from "react-i18next";
 
-export const supportedLanguages = {
-  "de": "Deutsch",
-  "en": "English",
-  "fr": "Français",
-  "he": "עברית",
-  "it": "Italiano",
-  "ja": "日本語",
-  "ko": "한국어",
-  "tr": "Türkçe",
-  "zh": "简体中文"
-} as const;
+import { supportedLanguages } from "./config/languages";
 
 i18n
   .use(detector) // detect user language from browser settings

@@ -1,4 +1,5 @@
 import React from "react";
+import { EditorScopeContext } from "../editor/environment";
 import classnames from "classnames";
 import {detect} from "detect-browser";
 
@@ -17,7 +18,7 @@ import pkgJson from "../../package.json";
 //@ts-ignore
 import maputnikLogo from "maputnik-design/logos/logo-color.svg?inline";
 import { withTranslation, type WithTranslation } from "react-i18next";
-import { supportedLanguages } from "../i18n";
+import { supportedLanguages } from "../config/languages";
 import type { OnStyleChangedCallback } from "../libs/definitions";
 
 // This is required because of <https://stackoverflow.com/a/49846426>, there isn't another way to detect support that I'm aware of.
@@ -109,6 +110,9 @@ type AppToolbarInternalProps = {
 } & WithTranslation;
 
 class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
+  static contextType = EditorScopeContext;
+  declare context: React.ContextType<typeof EditorScopeContext>;
+
   state = {
     isOpen: {
       settings: false,
@@ -129,10 +133,10 @@ class AppToolbarInternal extends React.Component<AppToolbarInternalProps> {
 
   onSkip = (target: string) => {
     if (target === "map") {
-      (document.querySelector(".maplibregl-canvas") as HTMLCanvasElement).focus();
+      ((this.context?.current ?? document).querySelector(".maplibregl-canvas") as HTMLCanvasElement).focus();
     }
     else {
-      const el = document.querySelector("#skip-target-"+target) as HTMLButtonElement;
+      const el = (this.context?.current ?? document).querySelector("#skip-target-"+target) as HTMLButtonElement;
       el.focus();
     }
   };

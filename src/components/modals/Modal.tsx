@@ -1,8 +1,11 @@
 import React, { type PropsWithChildren } from "react";
 import {MdClose} from "react-icons/md";
 import AriaModal from "react-aria-modal";
+import { EditorScopeContext } from "../../editor/environment";
 import classnames from "classnames";
 import { type WithTranslation, withTranslation } from "react-i18next";
+
+const EmbeddedAriaModal = AriaModal.renderTo(".maputnik-editor__modals");
 
 type ModalInternalProps = PropsWithChildren & {
   "data-wd-key"?: string
@@ -15,6 +18,14 @@ type ModalInternalProps = PropsWithChildren & {
 
 
 class ModalInternal extends React.Component<ModalInternalProps> {
+  static contextType = EditorScopeContext;
+  declare context: React.ContextType<typeof EditorScopeContext>;
+  private closeTimer?: ReturnType<typeof setTimeout>;
+
+  componentWillUnmount() {
+    clearTimeout(this.closeTimer);
+  }
+
   static defaultProps = {
     underlayClickExits: true
   };
@@ -25,15 +36,19 @@ class ModalInternal extends React.Component<ModalInternalProps> {
       (document.activeElement as HTMLElement).blur();
     }
 
-    setTimeout(() => {
+    this.closeTimer = setTimeout(() => {
       this.props.onOpenToggle();
     }, 0);
   };
 
   render() {
     const t = this.props.t;
+    const Dialog = this.context ? EmbeddedAriaModal : AriaModal;
     if(this.props.isOpen) {
-      return <AriaModal
+      return <Dialog
+        scrollDisabled={!this.context}
+        underlayStyle={this.context ? {position: "absolute"} : undefined}
+        dialogStyle={this.context ? {maxHeight: "100%"} : undefined}
         titleText={this.props.title}
         underlayClickExits={this.props.underlayClickExits}
         data-wd-key={this.props["data-wd-key"]}
@@ -59,7 +74,7 @@ class ModalInternal extends React.Component<ModalInternalProps> {
             <div className="maputnik-modal-content">{this.props.children}</div>
           </div>
         </div>
-      </AriaModal>;
+      </Dialog>;
     }
     else {
       return false;

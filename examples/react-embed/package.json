@@ -1,0 +1,10 @@
+{
+  "name": "maputnik-react-embed-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --config vite.config.ts",
+    "build": "tsc --project tsconfig.json && vite build --config vite.config.ts"
+  },
+  "description": "Source integration POC; uses the dependencies installed at the repository root."
+}

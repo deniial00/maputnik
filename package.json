@@ -17,7 +17,9 @@
     "test-unit": "vitest",
     "test-unit-ci": "vitest run --coverage --reporter=json",
     "lint-css": "stylelint \"src/styles/*.scss\"",
-    "sort-styles": "jq 'sort_by(.id)' src/config/styles.json > tmp.json && mv tmp.json src/config/styles.json"
+    "sort-styles": "jq 'sort_by(.id)' src/config/styles.json > tmp.json && mv tmp.json src/config/styles.json",
+    "start:embed": "npm run copy-rtl-text-plugin && vite --config examples/react-embed/vite.config.ts",
+    "build:embed": "npm run copy-rtl-text-plugin && npm --prefix examples/react-embed run build"
   },
   "repository": {
     "type": "git",

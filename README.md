@@ -11,6 +11,11 @@ A free and open visual editor for the [MapLibre GL styles](https://maplibre.org/
 targeted at developers and map designers.
 
 
+## Embeddable React POC
+
+See [the integration guide and POC assessment](docs/embeddable-editor.md).
+Start the external React host with `npm run start:embed`. This branch adds a source-level component API; it does not publish an npm package.
+
 ## Usage
 
 - :link: Design your maps online at **<https://www.maplibre.org/maputnik/>** (all in local storage)

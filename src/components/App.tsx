@@ -40,7 +40,7 @@ import { type MapOptions } from "maplibre-gl";
 import { type MappedError, type OnStyleChangedOpts, type StyleSpecificationWithId } from "../libs/definitions";
 
 // Buffer must be defined globally for @maplibre/maplibre-gl-style-spec validate() function to succeed.
-window.Buffer = buffer.Buffer;
+window.Buffer ??= buffer.Buffer;
 
 function setFetchAccessToken(url: string, mapStyle: StyleSpecification) {
   const matchesTilehosting = url.match(/\.tilehosting\.com/);
@@ -123,31 +123,46 @@ type AppState = {
   fileHandle: FileSystemFileHandle | null
 };
 
-export class App extends React.Component<any, AppState> {
+type AppProps = {
+  embedded?: boolean;
+  initialStyle?: StyleSpecification;
+  onStyleChange?: () => void;
+  scope?: React.RefObject<HTMLDivElement | null>;
+};
+
+export class App extends React.Component<AppProps, AppState> {
   revisionStore: RevisionStore;
   styleStore: IStyleStore | null = null;
   layerWatcher: LayerWatcher;
+  private active = false;
+  private lifecycle = 0;
+  private requests = new AbortController();
+  private currentStyle: StyleSpecification;
+  private shortcutTarget: HTMLElement | null = null;
+  private shortcutListener?: (event: KeyboardEvent) => void;
+  private fetchedSources?: StyleSpecification["sources"];
 
-  constructor(props: any) {
+  constructor(props: AppProps) {
     super(props);
 
     this.revisionStore = new RevisionStore();
-    this.configureKeyboardShortcuts();
+    this.currentStyle = cloneDeep(props.initialStyle ?? emptyStyle);
 
     this.state = {
       errors: [],
       infos: [],
-      mapStyle: emptyStyle,
+      // The persistent store requires an id, but embedded documents do not.
+      mapStyle: this.currentStyle as StyleSpecificationWithId,
       selectedLayerIndex: 0,
       sources: {},
       vectorLayers: {},
       mapState: "map",
       spec: latest,
       mapView: {
-        zoom: 0,
+        zoom: props.initialStyle?.zoom ?? 0,
         center: {
-          lng: 0,
-          lat: 0,
+          lng: props.initialStyle?.center?.[0] ?? 0,
+          lat: props.initialStyle?.center?.[1] ?? 0,
         },
         _from: "app"
       },
@@ -173,7 +188,11 @@ export class App extends React.Component<any, AppState> {
     };
 
     this.layerWatcher = new LayerWatcher({
-      onVectorLayersChange: v => this.setState({ vectorLayers: v })
+      onSourcesChange: () => {
+        this.fetchedSources = undefined;
+        void this.fetchSources();
+      },
+      onVectorLayersChange: v => { if (this.active) this.setState({ vectorLayers: v }); }
     });
   }
 
@@ -226,7 +245,7 @@ export class App extends React.Component<any, AppState> {
       {
         key: "m",
         handler: () => {
-          (document.querySelector(".maplibregl-canvas") as HTMLCanvasElement).focus();
+          (this.props.scope?.current ?? document).querySelector<HTMLCanvasElement>(".maplibregl-canvas")?.focus();
         }
       },
       {
@@ -237,12 +256,14 @@ export class App extends React.Component<any, AppState> {
       },
     ];
 
-    document.body.addEventListener("keyup", (e) => {
+    this.shortcutTarget = this.props.scope?.current ?? document.body;
+    this.shortcutListener = (e) => {
       if(e.key === "Escape") {
         (e.target as HTMLElement).blur();
-        document.body.focus();
+        this.shortcutTarget?.focus();
       }
-      else if(this.state.isOpen.shortcuts || document.activeElement === document.body) {
+      else if(this.state.isOpen.shortcuts || document.activeElement === this.shortcutTarget ||
+        (this.props.embedded && e.target instanceof HTMLCanvasElement)) {
         const shortcut = shortcuts.find((shortcut) => {
           return (shortcut.key === e.key);
         });
@@ -252,10 +273,16 @@ export class App extends React.Component<any, AppState> {
           shortcut.handler();
         }
       }
-    });
+    };
+    this.shortcutTarget.addEventListener("keyup", this.shortcutListener);
   };
 
   handleKeyPress = (e: KeyboardEvent) => {
+    if (this.props.embedded) {
+      const target = e.target as HTMLElement;
+      if (!this.props.scope?.current?.contains(target) ||
+        target.closest("input, textarea, select, [contenteditable=true]")) return;
+    }
     if(navigator.platform.toUpperCase().indexOf("MAC") >= 0) {
       if(e.metaKey && e.shiftKey && e.keyCode === 90) {
         e.preventDefault();
@@ -279,16 +306,53 @@ export class App extends React.Component<any, AppState> {
   };
 
   async componentDidMount() {
-    this.styleStore = await createStyleStore((mapStyle, opts) => this.onStyleChanged(mapStyle, opts));
+    this.active = true;
+    const lifecycle = ++this.lifecycle;
+    this.requests = new AbortController();
+    this.fetchedSources = undefined;
+    this.configureKeyboardShortcuts();
     window.addEventListener("keydown", this.handleKeyPress);
+    if (this.props.embedded) {
+      this.revisionStore = new RevisionStore();
+      this.onStyleChanged(this.currentStyle as StyleSpecificationWithId, {initialLoad: true, save: false});
+    } else {
+      const store = await createStyleStore((mapStyle, opts) => {
+        if (this.active && lifecycle === this.lifecycle) this.onStyleChanged(mapStyle, opts);
+      });
+      if (this.active && lifecycle === this.lifecycle) this.styleStore = store;
+    }
   }
 
   componentWillUnmount() {
+    this.active = false;
+    this.requests.abort();
+    this.layerWatcher.dispose();
+    if (this.shortcutListener) this.shortcutTarget?.removeEventListener("keyup", this.shortcutListener);
     window.removeEventListener("keydown", this.handleKeyPress);
   }
 
+  getStyle = (): StyleSpecification => cloneDeep(this.currentStyle);
+
+  replaceStyle = (style: StyleSpecification) => {
+    const snapshot = cloneDeep(style) as StyleSpecificationWithId;
+    this.requests.abort();
+    this.requests = new AbortController();
+    this.revisionStore = new RevisionStore();
+    this.layerWatcher.reset();
+    this.fetchedSources = undefined;
+    this.onStyleChanged(snapshot);
+    this.setState({
+      selectedLayerIndex: 0,
+      selectedLayerOriginalId: snapshot.layers[0]?.id,
+      sources: {}, vectorLayers: {}, infos: [], fileHandle: null,
+      mapView: {zoom: snapshot.zoom ?? 0, center: {
+        lng: snapshot.center?.[0] ?? 0, lat: snapshot.center?.[1] ?? 0,
+      }, _from: "app"},
+    });
+  };
+
   saveStyle(snapshotStyle: StyleSpecificationWithId) {
-    this.styleStore?.save(snapshotStyle);
+    if (!this.props.embedded) this.styleStore?.save(snapshotStyle);
   }
 
   updateFonts(urlTemplate: string) {
@@ -296,13 +360,17 @@ export class App extends React.Component<any, AppState> {
     const accessToken = metadata["maputnik:openmaptiles_access_token"] || tokens.openmaptiles;
 
     const glyphUrl = (typeof urlTemplate === "string")? urlTemplate.replace("{key}", accessToken): urlTemplate;
-    downloadGlyphsMetadata(glyphUrl).then(fonts => {
+    const signal = this.requests.signal;
+    downloadGlyphsMetadata(glyphUrl, signal).then(fonts => {
+      if (signal.aborted || this.state.mapStyle.glyphs !== urlTemplate) return;
       this.setState({ spec: updateRootSpec(this.state.spec, "glyphs", fonts)});
     });
   }
 
   updateIcons(baseUrl: string) {
-    downloadSpriteMetadata(baseUrl).then(icons => {
+    const signal = this.requests.signal;
+    downloadSpriteMetadata(baseUrl, signal).then(icons => {
+      if (signal.aborted || this.state.mapStyle.sprite !== baseUrl) return;
       this.setState({ spec: updateRootSpec(this.state.spec, "sprite", icons)});
     });
   }
@@ -330,6 +398,7 @@ export class App extends React.Component<any, AppState> {
   };
 
   onStyleChanged = (newStyle: StyleSpecificationWithId, opts: OnStyleChangedOpts={}): void => {
+    const changed = !isEqual(this.currentStyle, newStyle);
     opts = {
       save: true,
       addRevision: true,
@@ -362,7 +431,7 @@ export class App extends React.Component<any, AppState> {
     }
 
 
-    if (opts.initialLoad) {
+    if (opts.initialLoad && !this.props.embedded) {
       this.getInitialStateFromUrl(newStyle);
     }
 
@@ -461,10 +530,10 @@ export class App extends React.Component<any, AppState> {
       }
     }
 
-    if(newStyle.glyphs !== this.state.mapStyle.glyphs) {
+    if(opts.initialLoad || newStyle.glyphs !== this.state.mapStyle.glyphs) {
       this.updateFonts(newStyle.glyphs as string);
     }
-    if(newStyle.sprite !== this.state.mapStyle.sprite) {
+    if(opts.initialLoad || newStyle.sprite !== this.state.mapStyle.sprite) {
       this.updateIcons(newStyle.sprite as string);
     }
 
@@ -478,6 +547,8 @@ export class App extends React.Component<any, AppState> {
     const zoom = newStyle?.zoom;
     const center = newStyle?.center;
 
+    // Keep imperative reads synchronous, even before React commits setState.
+    this.currentStyle = newStyle;
     this.setState({
       mapStyle: newStyle,
       dirtyMapStyle: dirtyMapStyle,
@@ -491,13 +562,16 @@ export class App extends React.Component<any, AppState> {
       } : this.state.mapView,
       errors: mappedErrors,
     }, () => {
+      if (!this.active) return;
       this.fetchSources();
       this.setStateInUrl();
+      if (changed && !opts.initialLoad) this.props.onStyleChange?.();
     });
   };
 
   onUndo = () => {
     const activeStyle = this.revisionStore.undo();
+    if (!activeStyle) return;
 
     const messages = undoMessages(this.state.mapStyle, activeStyle);
     this.onStyleChanged(activeStyle, {addRevision: false});
@@ -508,6 +582,7 @@ export class App extends React.Component<any, AppState> {
 
   onRedo = () => {
     const activeStyle = this.revisionStore.redo();
+    if (!activeStyle) return;
     const messages = redoMessages(this.state.mapStyle, activeStyle);
     this.onStyleChanged(activeStyle, {addRevision: false});
     this.setState({
@@ -618,11 +693,17 @@ export class App extends React.Component<any, AppState> {
   };
 
   async fetchSources() {
+    const styleSnapshot = this.state.mapStyle;
+    const sourceSnapshot = styleSnapshot.sources;
+    if (!this.active || sourceSnapshot === this.fetchedSources) return;
+    this.fetchedSources = sourceSnapshot;
+    const signal = this.requests.signal;
     const sourceList: {[key: string]: SourceSpecification & {layers: string[]}} = {};
-    for(const key of Object.keys(this.state.mapStyle.sources)) {
-      const source = this.state.mapStyle.sources[key];
+    for(const key of Object.keys(sourceSnapshot)) {
+      if (signal.aborted || sourceSnapshot !== this.state.mapStyle.sources) return;
+      const source = sourceSnapshot[key];
       if(source.type !== "vector" || !("url" in source)) {
-        sourceList[key] = this.state.sources[key] || {...this.state.mapStyle.sources[key]};
+        sourceList[key] = {...source, layers: this.layerWatcher.sources[key] ?? []};
         if (sourceList[key].layers === undefined) {
           sourceList[key].layers = [];
         }
@@ -635,7 +716,7 @@ export class App extends React.Component<any, AppState> {
         let url = source.url;
 
         try {
-          url = setFetchAccessToken(url!, this.state.mapStyle);
+          url = setFetchAccessToken(url!, styleSnapshot);
         } catch(err) {
           console.warn("Failed to setFetchAccessToken: ", err);
         }
@@ -655,17 +736,18 @@ export class App extends React.Component<any, AppState> {
             const json = await (new PMTiles(url!.substring(10))).getTileJson("");
             setVectorLayers(json);
           } else {
-            const response = await fetch(url!, { mode: "cors" });
+            const response = await fetch(url!, { mode: "cors", signal });
             const json = await response.json();
             setVectorLayers(json);
           }
         } catch(err) {
+          if (signal.aborted) return;
           console.error(`Failed to process source for url: '${url}', ${err}`);
         }
       }
     }
 
-    if(!isEqual(this.state.sources, sourceList)) {
+    if(!signal.aborted && sourceSnapshot === this.state.mapStyle.sources && !isEqual(this.state.sources, sourceList)) {
       console.debug("Setting sources", sourceList);
       this.setState({
         sources: sourceList
@@ -724,7 +806,7 @@ export class App extends React.Component<any, AppState> {
 
       mapElement = <MapMaplibreGl {...mapProps}
         onChange={this.onMapChange}
-        options={this.state.maplibreGlDebugOptions}
+        options={{...this.state.maplibreGlDebugOptions, hash: !this.props.embedded}}
         inspectModeEnabled={this.state.mapState === "inspect"}
         highlightedLayer={this.state.mapStyle.layers[this.state.selectedLayerIndex]}
         onLayerSelect={this.onLayerSelect} />;
@@ -736,7 +818,7 @@ export class App extends React.Component<any, AppState> {
     }
     const elementStyle: {filter?: string} = {};
     if (filterName) {
-      elementStyle.filter = `url('#${filterName}')`;
+      elementStyle.filter = `url('#${this.props.embedded ? "maputnik-embedded-" : ""}${filterName}')`;
     }
 
     return <div style={elementStyle} className="maputnik-map__container" data-wd-key="maplibre:container">
@@ -745,6 +827,7 @@ export class App extends React.Component<any, AppState> {
   }
 
   setStateInUrl = () => {
+    if (this.props.embedded) return;
     const {mapState, mapStyle, isOpen} = this.state;
     const {selectedLayerIndex} = this.state;
     const url = new URL(location.href);
@@ -981,6 +1064,7 @@ export class App extends React.Component<any, AppState> {
     </div>;
 
     return <AppLayout
+      embedded={this.props.embedded}
       toolbar={toolbar}
       layerList={layerList}
       layerEditor={layerEditor}

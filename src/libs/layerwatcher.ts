@@ -12,7 +12,7 @@ export type LayerWatcherOptions = {
 export class LayerWatcher {
   onSourcesChange: (sources: { [sourceId: string]: string[] }) => void;
   onVectorLayersChange: (vectorLayers: { [vectorLayerId: string]: { [propertyName: string]: { [propertyValue: string]: {} } } }) => void;
-  throttledAnalyzeVectorLayerFields: (map: any) => void;
+  throttledAnalyzeVectorLayerFields: ReturnType<typeof throttle<(map: Map) => void>>;
   _sources: { [sourceId: string]: string[] };
   _vectorLayers: { [vectorLayerId: string]: { [propertyName: string]: { [propertyValue: string]: {} } } };
 
@@ -27,6 +27,16 @@ export class LayerWatcher {
     // possible and only do it after a batch of data has loaded because
     // we only care eventually about knowing the fields in the vector layers
     this.throttledAnalyzeVectorLayerFields = throttle(this.analyzeVectorLayerFields, 5000);
+  }
+
+  dispose() {
+    this.throttledAnalyzeVectorLayerFields.cancel();
+  }
+
+  reset() {
+    this.dispose();
+    this._sources = {};
+    this._vectorLayers = {};
   }
 
   analyzeMap(map: Map) {

@@ -64,6 +64,11 @@ class InputJsonInternal extends React.Component<InputJsonInternalProps, InputJso
     });
   }
 
+  componentWillUnmount() {
+    this._view?.destroy();
+    this._view = undefined;
+  }
+
   onFocus = () => {
     if (this.props.onFocus) this.props.onFocus();
     this.setState({

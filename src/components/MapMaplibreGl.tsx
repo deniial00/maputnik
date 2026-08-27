@@ -1,5 +1,5 @@
 import React from "react";
-import {createRoot} from "react-dom/client";
+import {createRoot, type Root} from "react-dom/client";
 import * as MapLibreGl from "maplibre-gl";
 import {type LayerSpecification, type LngLat, type Map, type MapOptions, type SourceSpecification, type StyleSpecification} from "maplibre-gl";
 import MaplibreInspect from "@maplibre/maplibre-gl-inspect";
@@ -14,8 +14,7 @@ import "../maplibregl.css";
 import "../libs/maplibre-init";
 import MaplibreGeocoder, { type MaplibreGeocoderApi, type MaplibreGeocoderApiConfig } from "@maplibre/maplibre-gl-geocoder";
 import "@maplibre/maplibre-gl-geocoder/dist/maplibre-gl-geocoder.css";
-import { withTranslation, type WithTranslation } from "react-i18next";
-import i18next from "i18next";
+import { I18nextProvider, withTranslation, type WithTranslation } from "react-i18next";
 import { Protocol } from "pmtiles";
 
 function buildInspectStyle(originalMapStyle: StyleSpecification, coloredLayers: HighlightedLayer[], highlightedLayer?: HighlightedLayer) {
@@ -89,6 +88,11 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
     options: {} as MapOptions,
   };
   container: HTMLDivElement | null = null;
+  private mapInstance: Map | null = null;
+  private popupRoot: Root | null = null;
+  private resizeObserver?: ResizeObserver;
+  private inspectTimer?: ReturnType<typeof setTimeout>;
+  private onLanguageChanged = () => this.forceUpdate();
 
   constructor(props: MapMaplibreGlInternalProps) {
     super(props);
@@ -98,9 +102,6 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
       geocoder: null,
       zoomControl: null,
     };
-    i18next.on("languageChanged", () => {
-      this.forceUpdate();
-    });
   }
 
 
@@ -139,19 +140,21 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
     if (this.state.inspect && this.props.inspectModeEnabled) {
       this.state.inspect.setOriginalStyle(styleWithTokens);
       // In case the sources are the same, there's a need to refresh the style
-      setTimeout(() => {
-        this.state.inspect!.render();
+      clearTimeout(this.inspectTimer);
+      this.inspectTimer = setTimeout(() => {
+        if (this.mapInstance) this.state.inspect?.render();
       }, 500);
     }
 
   }
 
   componentDidMount() {
+    this.props.i18n.on("languageChanged", this.onLanguageChanged);
     const mapOpts = {
+      hash: true,
       ...this.props.options,
       container: this.container!,
       style: this.props.mapStyle,
-      hash: true,
       maxZoom: 24,
       // make root relative urls in stylefiles work as maplibre gl js does
       // not support this for everything:
@@ -170,6 +173,9 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
     const protocol = new Protocol({metadata: true});
     MapLibreGl.addProtocol("pmtiles",protocol.tile);
     const map = new MapLibreGl.Map(mapOpts);
+    this.mapInstance = map;
+    this.resizeObserver = new ResizeObserver(() => map.resize());
+    this.resizeObserver.observe(this.container!);
 
     const mapViewChange = () => {
       const center = map.getCenter();
@@ -192,6 +198,7 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
 
     const tmpNode = document.createElement("div");
     const root = createRoot(tmpNode);
+    this.popupRoot = root;
 
     const inspectPopup = new MapLibreGl.Popup({
       closeOnClick: false
@@ -211,24 +218,33 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
       renderPopup: (features: InspectFeature[]) => {
         if(this.props.inspectModeEnabled) {
           inspectPopup.once("open", () => {
-            root.render(<MapMaplibreGlFeaturePropertyPopup features={features} />);
+            root.render(<I18nextProvider i18n={this.props.i18n}>
+              <MapMaplibreGlFeaturePropertyPopup features={features} />
+            </I18nextProvider>);
           });
           return tmpNode;
         } else {
           inspectPopup.once("open", () => {
-            root.render(<MapMaplibreGlLayerPopup
+            root.render(<I18nextProvider i18n={this.props.i18n}><MapMaplibreGlLayerPopup
               features={features}
               onLayerSelect={this.onLayerSelectById}
               zoom={this.state.zoom}
-            />,);
+            /></I18nextProvider>);
           });
           return tmpNode;
         }
       }
     });
+    // Inspect 1.9 schedules a private timeout which onRemove does not cancel.
+    // Keep that delayed callback from touching an already removed map.
+    const renderInspect = inspect.render.bind(inspect);
+    inspect.render = () => {
+      if (this.mapInstance === map) renderInspect();
+    };
     map.addControl(inspect);
 
     map.on("style.load", () => {
+      if (this.mapInstance !== map) return;
       this.setState({
         map,
         inspect,
@@ -241,7 +257,7 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
     map.on("data", e => {
       if(e.dataType !== "source" || !e.tile) return;
       this.props.onDataChange!({
-        map: this.state.map
+        map
       });
     });
 
@@ -257,6 +273,19 @@ class MapMaplibreGlInternal extends React.Component<MapMaplibreGlInternalProps, 
 
     map.on("dragend", mapViewChange);
     map.on("zoomend", mapViewChange);
+  }
+
+  componentWillUnmount() {
+    this.props.i18n.off("languageChanged", this.onLanguageChanged);
+    clearTimeout(this.inspectTimer);
+    this.resizeObserver?.disconnect();
+    const map = this.mapInstance;
+    this.mapInstance = null;
+    map?.remove();
+    // React cannot unmount another root while it is committing this tree.
+    const root = this.popupRoot;
+    this.popupRoot = null;
+    queueMicrotask(() => root?.unmount());
   }
 
   onLayerSelectById = (id: string) => {

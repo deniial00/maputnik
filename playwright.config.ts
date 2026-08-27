@@ -37,10 +37,15 @@ export default defineConfig({
   ],
   webServer: useExternalServer
     ? undefined
-    : {
+    : [{
       command: "npm run start",
       url: "http://localhost:8888/maputnik/",
       reuseExistingServer: !isCI,
       timeout: 120000,
-    },
+    }, {
+      command: "npm run start:embed",
+      url: "http://127.0.0.1:5173/",
+      reuseExistingServer: !isCI,
+      timeout: 120000,
+    }],
 });
