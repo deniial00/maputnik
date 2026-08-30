@@ -1,0 +1,6 @@
+{
+  "name": "maputnik-headless-react-example",
+  "private": true,
+  "type": "module",
+  "scripts": {"build": "tsc --project tsconfig.json && vite build --config vite.config.ts"}
+}

@@ -15,6 +15,7 @@ export default defineConfig({
   ignores: [
     "dist/**/*",
     "dist-embed/**/*",
+    "dist-headless/**/*",
     "public/**/*",
   ],
   languageOptions: {

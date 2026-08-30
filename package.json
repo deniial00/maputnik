@@ -19,7 +19,9 @@
     "lint-css": "stylelint \"src/styles/*.scss\"",
     "sort-styles": "jq 'sort_by(.id)' src/config/styles.json > tmp.json && mv tmp.json src/config/styles.json",
     "start:embed": "npm run copy-rtl-text-plugin && vite --config examples/react-embed/vite.config.ts",
-    "build:embed": "npm run copy-rtl-text-plugin && npm --prefix examples/react-embed run build"
+    "build:embed": "npm run copy-rtl-text-plugin && npm --prefix examples/react-embed run build",
+    "start:headless": "npm run copy-rtl-text-plugin && vite --config examples/headless-react/vite.config.ts",
+    "build:headless": "npm run copy-rtl-text-plugin && npm --prefix examples/headless-react run build"
   },
   "repository": {
     "type": "git",

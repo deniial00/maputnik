@@ -3,6 +3,7 @@
 ### ✨ Features and improvements
 
 - Add a source-level embeddable React editor POC with an imperative style API, isolated browser integrations and a host example.
+- Add an experimental headless editor store, selective React hooks, reusable UI adapters, and a repository-driven sample host.
 - Replace Cypress with Playwright for end-to-end tests and Vitest browser mode (Playwright provider) for component tests; drop the `@shellygo/cypress-test-utils` helper in favour of a `MaputnikDriver` page object
 - Upgrade to MapLibre GL JS 6 and Vite 8, and update the remaining dependencies
 - Serve the RTL text plugin from `@mapbox/mapbox-gl-rtl-text` instead of a pinned CDN URL, so its version is tracked in `package.json`
