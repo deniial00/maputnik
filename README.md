@@ -16,7 +16,7 @@ targeted at developers and map designers.
 See [the integration guide and POC assessment](docs/embeddable-editor.md).
 Start the external React host with `npm run start:embed`. This branch adds a source-level component API; it does not publish an npm package.
 
-The experimental [headless core draft](docs/headless-core.md) separates the style store and commands from React and provides optional hooks and Maputnik UI adapters. Run its modular host with `npm run start:headless`.
+The experimental [headless core draft](docs/headless-core.md) separates the style store and commands from React and provides optional hooks and Maputnik UI adapters. Run `npm run start:headless` for the upstream-layout sample at `/` and the focused shadcn sample at `/shadcn.html`.
 
 ## Usage
 

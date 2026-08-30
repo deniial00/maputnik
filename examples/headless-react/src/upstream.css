@@ -1,0 +1,13 @@
+html, body, #root { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+
+.upstream-editor-root { min-height: 100%; }
+.upstream-editor-root .maputnik-layout-main { bottom: 28px; }
+.upstream-editor-root .maputnik-layout-bottom { width: calc(100% - 570px); }
+.upstream-logo { display: flex; align-items: center; gap: 8px; color: #fff; }
+.upstream-logo-mark { width: 28px; height: 28px; display: inline-grid; place-items: center; border-radius: 3px; background: #27ae60; font-weight: 800; }
+.upstream-library select { max-width: 190px; }
+.upstream-dirty { height: 40px; display: inline-flex; align-items: center; gap: 5px; padding: 0 14px; color: #8fcfa9; white-space: nowrap; }
+.upstream-dirty.is-dirty { color: #f2c66d; }
+.upstream-status { height: 28px; display: flex; align-items: center; gap: 18px; padding: 0 10px; color: #aaa; font-size: 11px; }
+.upstream-status span:first-child { flex: 1; }
+.upstream-editor-root button:disabled { cursor: default; opacity: 0.45; }

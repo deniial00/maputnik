@@ -68,7 +68,12 @@ The optional components deliberately remain opinionated Maputnik UI. They demons
 
 ## Sample
 
-`examples/headless-react` contains a separate Vite host. Its in-memory repository exposes asynchronous `fetchStyle`, `updateStyle`, and `listStyles` functions. Switching library entries calls `loadStyle`; saving calls `updateStyle` followed by `markClean`. The host owns all surrounding UI while the center workspace reuses the Maputnik layer list, layer editor, and map preview.
+`examples/headless-react` contains two entries backed by the same provider and in-memory repository. The repository exposes asynchronous `fetchStyle`, `updateStyle`, and `listStyles` functions. Switching library entries calls `loadStyle`; saving calls `updateStyle` followed by `markClean`.
+
+- `http://127.0.0.1:5174/` reproduces the upstream Maputnik workspace with `AppLayout`, `HeadlessLayerList`, `HeadlessLayerEditor`, and `HeadlessMapPreview`. Only the toolbar is reduced to the repository, history, save, and variant controls supported by this draft.
+- `http://127.0.0.1:5174/shadcn.html` demonstrates a product-owned interface. It implements its own style and layer lists with the headless hooks, then embeds the real layer editor and map preview. It installs only the generated shadcn `Button`, `Card`, `Badge`, and `Tabs` components.
+
+The separate HTML entries keep Tailwind and shadcn styles out of the upstream-layout variant. Both entries use `SampleEditorProvider`, so their persistence, history, dirty state, validation, and selection behavior are identical.
 
 ```sh
 npm run start:headless
@@ -85,10 +90,11 @@ The adapters currently derive source choices directly from the style and do not 
 Verified on August 30, 2026:
 
 - Original web app, full embed host, and headless sample production builds passed.
-- ESLint, upstream SCSS linting, editor/sample CSS linting, and `git diff --check` passed.
+- ESLint, upstream SCSS linting, and `git diff --check` passed.
 - 58 unit tests passed across 10 files, including 8 focused headless-core tests.
-- 6 headless browser flows passed: composition without an iframe, edits and dirty state, undo/redo, clean style-library loading, repository save/readback, and product navigation with draft preservation.
-- The first 5 headless flows and all 17 existing embed flows passed together (22 tests); the navigation flow passed separately after it was added.
-- A deliberately incorrect dirty-state expectation failed at the expected assertion and was restored before the final positive runs.
+- 7 headless browser flows passed across both variants: upstream layout composition, edits/history/save, clean style-library loading, selected shadcn primitives, custom layer selection, shared persistence behavior, and live style JSON.
+- All 7 headless flows and all 17 existing embed flows passed together (24 tests).
+- Visual inspection confirmed that both variants render the real MapLibre map and Maputnik layer editor without an iframe. The shadcn map container was also checked at its final 680 px height after CSS isolation fixes.
+- A deliberately incorrect style-JSON expectation failed at the expected assertion and was restored before the final positive runs.
 
 The builds retain Vite's existing large-chunk warning. The headless sample is a source-level architecture draft, not a published or size-optimized package.

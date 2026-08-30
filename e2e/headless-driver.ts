@@ -6,7 +6,8 @@ export class HeadlessDriver {
   given = this.helper.given;
   when = {
     ...this.helper.when,
-    demo: () => this.helper.when.visit("http://127.0.0.1:5174/"),
+    upstream: () => this.helper.when.visit("http://127.0.0.1:5174/"),
+    shadcn: () => this.helper.when.visit("http://127.0.0.1:5174/shadcn.html"),
     editBackground: async (color: string) => {
       await this.helper.when.fillByName("background-color", color);
       await this.helper.when.focus("layer-editor.layer-id.input");

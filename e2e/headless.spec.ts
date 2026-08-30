@@ -1,74 +1,93 @@
 import { beforeEach, describe, test } from "./utils/fixtures";
 import { HeadlessDriver } from "./headless-driver";
 
-describe("headless core sample", () => {
+describe("headless sample with the upstream Maputnik layout", () => {
   const {given, when, get, then} = new HeadlessDriver();
 
   beforeEach(async () => {
     given.trackPageErrors();
     await given.unavailableStorage();
-    await when.demo();
-    await then(get.elementByTestId("headless:status")).shouldContainText("repository adapter loaded");
+    await when.upstream();
+    await then(get.elementByTestId("upstream:status")).shouldContainText("repository adapter loaded");
   });
 
   test.afterEach(async () => {
     await then(get.pageErrors()).shouldDeepNestedInclude([]);
   });
 
-  test("composes real Maputnik components inside the custom host", async () => {
-    await then(get.elementByTestId("headless:editor")).shouldBeVisible();
+  test("uses the standard Maputnik layout and real editor components", async () => {
+    await then(get.element(".maputnik-toolbar")).shouldBeVisible();
+    await then(get.element(".maputnik-layout-list")).shouldBeVisible();
+    await then(get.element(".maputnik-layout-drawer")).shouldBeVisible();
     await then(get.elementByTestId("layer-list")).shouldBeVisible();
     await then(get.element(".maplibregl-canvas")).shouldHaveLength(1);
     await then(get.element("iframe")).shouldNotExist();
-    await then(get.elementByTestId("headless:selected")).shouldContainText("background");
+    await then(get.elementByTestId("upstream:selected")).shouldContainText("background");
   });
 
-  test("edits flow through the core and host-owned dirty state", async () => {
+  test("edits, undo, redo, and save flow through the headless core", async () => {
     await when.editBackground("#bb3355");
-    await then(get.elementByTestId("headless:dirty")).shouldHaveText("Unsaved changes");
-    await then(get.elementByTestId("headless:history")).shouldHaveText("History 2/2");
-    await when.click("headless:save");
-    await then(get.elementByTestId("headless:status")).shouldContainText("through the host repository adapter");
-    await then(get.elementByTestId("headless:dirty")).shouldHaveText("Saved");
-  });
-
-  test("undo and redo are exposed through custom host controls", async () => {
-    await when.editBackground("#bb3355");
-    await when.click("headless:undo");
+    await then(get.elementByTestId("upstream:dirty")).shouldHaveText("Unsaved changes");
+    await then(get.elementByTestId("upstream:history")).shouldHaveText("History 2/2");
+    await when.click("upstream:undo");
     await then(get.element("[name='background-color']")).shouldHaveValue("#e9ede5");
-    await when.click("headless:redo");
+    await when.click("upstream:redo");
     await then(get.element("[name='background-color']")).shouldHaveValue("#bb3355");
+    await when.click("upstream:save");
+    await then(get.elementByTestId("upstream:status")).shouldContainText("through the host repository adapter");
+    await then(get.elementByTestId("upstream:dirty")).shouldContainText("Saved");
   });
 
-  test("style library loading resets history and the clean baseline", async () => {
+  test("opens repository styles and resets the clean history baseline", async () => {
     await when.editBackground("#bb3355");
-    await when.click("headless:library:vienna-night");
-    await then(get.element(".workspace-heading h1")).shouldContainText("Night operations");
-    await then(get.elementByTestId("headless:dirty")).shouldHaveText("Saved");
-    await then(get.elementByTestId("headless:history")).shouldHaveText("History 1/1");
+    await when.select("upstream:library", "vienna-night");
+    await then(get.elementByTestId("upstream:dirty")).shouldContainText("Saved");
+    await then(get.elementByTestId("upstream:history")).shouldHaveText("History 1/1");
     await then(get.element("[name='background-color']")).shouldHaveValue("#152d36");
   });
+});
 
-  test("saved documents are read back through the repository adapter", async () => {
-    await when.editBackground("#bb3355");
-    await when.click("headless:save");
-    await then(get.elementByTestId("headless:status")).shouldContainText("Saved");
-    await when.click("headless:library:vienna-night");
-    await then(get.element(".workspace-heading h1")).shouldContainText("Night operations");
-    await when.click("headless:library:vienna-day");
-    await then(get.element("[name='background-color']")).shouldHaveValue("#bb3355");
+describe("headless sample with focused shadcn composition", () => {
+  const {given, when, get, then} = new HeadlessDriver();
+
+  beforeEach(async () => {
+    given.trackPageErrors();
+    await given.unavailableStorage();
+    await when.shadcn();
+    await then(get.elementByTestId("shadcn:status")).shouldContainText("repository adapter loaded");
   });
 
-  test("product navigation works without discarding the editor draft", async () => {
+  test.afterEach(async () => {
+    await then(get.pageErrors()).shouldDeepNestedInclude([]);
+  });
+
+  test("uses only the selected shadcn primitives around real Maputnik components", async () => {
+    await then(get.element("[data-slot='button']")).shouldExist();
+    await then(get.element("[data-slot='card']")).shouldExist();
+    await then(get.element("[data-slot='badge']")).shouldExist();
+    await then(get.element("[data-slot='tabs']")).shouldExist();
+    await then(get.element(".maplibregl-canvas")).shouldHaveLength(1);
+    await then(get.element("iframe")).shouldNotExist();
+  });
+
+  test("custom layer controls select the Maputnik layer editor", async () => {
+    await when.click("shadcn:layer:water");
+    await then(get.elementByTestId("shadcn:selected")).shouldContainText("water");
+    await then(get.element(".maputnik-layer-editor h2")).shouldContainText("water");
+  });
+
+  test("shares the same edit, history, and repository save behavior", async () => {
     await when.editBackground("#bb3355");
-    await when.click("headless:nav:projects");
-    await then(get.elementByTestId("headless:product-view")).shouldContainText("Projects");
-    await then(get.elementByTestId("headless:editor")).shouldNotBeVisible();
-    await when.click("headless:nav:publishing");
-    await then(get.elementByTestId("headless:product-view")).shouldContainText("Publishing");
-    await when.click("headless:nav:workspace");
-    await then(get.elementByTestId("headless:editor")).shouldBeVisible();
-    await then(get.elementByTestId("headless:dirty")).shouldHaveText("Unsaved changes");
-    await then(get.element("[name='background-color']")).shouldHaveValue("#bb3355");
+    await then(get.elementByTestId("shadcn:dirty")).shouldHaveText("Unsaved changes");
+    await then(get.elementByTestId("shadcn:history")).shouldHaveText("History 2/2");
+    await when.click("shadcn:save");
+    await then(get.elementByTestId("shadcn:status")).shouldContainText("through the host repository adapter");
+    await then(get.elementByTestId("shadcn:dirty")).shouldHaveText("Saved");
+  });
+
+  test("exposes the live headless style through the shadcn tabs", async () => {
+    await when.click("shadcn:tab:json");
+    await then(get.elementByTestId("shadcn:json")).shouldContainText("\"background-color\": \"#e9ede5\"");
+    await then(get.elementByTestId("shadcn:json")).shouldContainText("\"id\": \"water\"");
   });
 });
