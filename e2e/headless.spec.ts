@@ -58,4 +58,17 @@ describe("headless core sample", () => {
     await when.click("headless:library:vienna-day");
     await then(get.element("[name='background-color']")).shouldHaveValue("#bb3355");
   });
+
+  test("product navigation works without discarding the editor draft", async () => {
+    await when.editBackground("#bb3355");
+    await when.click("headless:nav:projects");
+    await then(get.elementByTestId("headless:product-view")).shouldContainText("Projects");
+    await then(get.elementByTestId("headless:editor")).shouldNotBeVisible();
+    await when.click("headless:nav:publishing");
+    await then(get.elementByTestId("headless:product-view")).shouldContainText("Publishing");
+    await when.click("headless:nav:workspace");
+    await then(get.elementByTestId("headless:editor")).shouldBeVisible();
+    await then(get.elementByTestId("headless:dirty")).shouldHaveText("Unsaved changes");
+    await then(get.element("[name='background-color']")).shouldHaveValue("#bb3355");
+  });
 });

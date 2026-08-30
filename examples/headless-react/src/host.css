@@ -8,9 +8,16 @@ button { font: inherit; }
 .product-header small { color: #7b8980; border-left: 1px solid #ccd5cd; padding-left: 10px; }
 .product-mark { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 7px; color: white; background: #245744; font-weight: 800; }
 .product-header nav { display: flex; gap: 3px; padding: 4px; border: 1px solid #d6ddd5; border-radius: 8px; background: #f8faf7; }
-.product-header nav button { border: 0; padding: 7px 11px; border-radius: 5px; color: #69776e; background: transparent; font-size: 11px; }
+.product-header nav button { cursor: pointer; border: 0; padding: 7px 11px; border-radius: 5px; color: #69776e; background: transparent; font-size: 11px; }
 .product-header nav .active { color: #244f40; background: #e4ebe5; }
 .host-owned { justify-self: end; color: #849087; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+.workspace-view.is-hidden { display: none; }
+.product-placeholder { min-height: 720px; padding: 82px max(8vw, 80px); }
+.product-placeholder h1 { margin: 5px 0 8px; font-size: 34px; }
+.product-placeholder > p:not(.eyebrow) { color: #718078; font-size: 13px; }
+.placeholder-card { width: 430px; display: grid; gap: 9px; margin-top: 32px; padding: 22px; border: 1px solid #cbd5cc; border-radius: 9px; background: #f9faf7; box-shadow: 0 8px 22px #263c2f0a; }
+.placeholder-card span { color: #7b8880; font-size: 11px; }
+.placeholder-card button { cursor: pointer; justify-self: start; margin-top: 10px; padding: 9px 12px; border: 0; border-radius: 5px; color: white; background: #285b47; font-size: 11px; }
 .workspace-heading { min-height: 110px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 .workspace-heading h1 { margin: 3px 0; font-size: 26px; font-weight: 650; letter-spacing: -0.6px; }
 .workspace-heading p { margin: 4px 0; color: #77837b; font-size: 12px; }

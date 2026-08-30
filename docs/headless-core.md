@@ -87,8 +87,8 @@ Verified on August 30, 2026:
 - Original web app, full embed host, and headless sample production builds passed.
 - ESLint, upstream SCSS linting, editor/sample CSS linting, and `git diff --check` passed.
 - 58 unit tests passed across 10 files, including 8 focused headless-core tests.
-- 5 headless browser flows passed: composition without an iframe, edits and dirty state, undo/redo, clean style-library loading, and repository save/readback.
-- The 5 headless flows and all 17 existing embed flows passed together (22 tests).
+- 6 headless browser flows passed: composition without an iframe, edits and dirty state, undo/redo, clean style-library loading, repository save/readback, and product navigation with draft preservation.
+- The first 5 headless flows and all 17 existing embed flows passed together (22 tests); the navigation flow passed separately after it was added.
 - A deliberately incorrect dirty-state expectation failed at the expected assertion and was restored before the final positive runs.
 
 The builds retain Vite's existing large-chunk warning. The headless sample is a source-level architecture draft, not a published or size-optimized package.
