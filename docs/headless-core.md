@@ -71,7 +71,7 @@ The optional components deliberately remain opinionated Maputnik UI. They demons
 `examples/headless-react` contains two entries backed by the same provider and in-memory repository. The repository exposes asynchronous `fetchStyle`, `updateStyle`, and `listStyles` functions. Switching library entries calls `loadStyle`; saving calls `updateStyle` followed by `markClean`.
 
 - `http://127.0.0.1:5174/` reproduces the upstream Maputnik workspace with `AppLayout`, `HeadlessLayerList`, `HeadlessLayerEditor`, and `HeadlessMapPreview`. Only the toolbar is reduced to the repository, history, save, and variant controls supported by this draft.
-- `http://127.0.0.1:5174/shadcn.html` demonstrates a product-owned interface. It implements its own style list, layer list, and spec-driven property editor with the headless hooks. Maputnik supplies only the map preview in this variant; the upstream `LayerEditor` is not rendered. The sample installs the generated shadcn `Button`, `Card`, `Badge`, `Tabs`, `Input`, `Label`, `Select`, `Textarea`, `Switch`, and `Separator` components.
+- `http://127.0.0.1:5174/shadcn.html` demonstrates a product-owned interface. It implements its own style list, layer list, add-layer dialog, and spec-driven property editor with the headless hooks. Maputnik supplies only the map preview in this variant; the upstream `LayerEditor` is not rendered. The sample installs the generated shadcn `Button`, `Card`, `Badge`, `Tabs`, `Input`, `Label`, `Select`, `Textarea`, `Switch`, and `Separator` components. Color properties combine a native color input with their text value, and the accessible add-layer shell uses the existing `react-aria-modal` dependency.
 
 The separate HTML entries keep Tailwind and shadcn styles out of the upstream-layout variant. Both entries use `SampleEditorProvider`, so their persistence, history, dirty state, validation, and selection behavior are identical.
 
@@ -92,8 +92,8 @@ Verified on August 30, 2026:
 - Original web app, full embed host, and headless sample production builds passed.
 - ESLint, upstream SCSS linting, and `git diff --check` passed.
 - 58 unit tests passed across 10 files, including 8 focused headless-core tests.
-- 7 headless browser flows passed across both variants: upstream layout composition, edits/history/save, clean style-library loading, selected shadcn primitives, custom layer selection, shared persistence behavior, and live style JSON.
-- All 7 headless flows and all 17 existing embed flows passed together (24 tests).
+- 8 headless browser flows passed across both variants: upstream layout composition, edits/history/save, clean style-library loading, selected shadcn primitives, custom layer selection, shared persistence behavior, accessible layer creation, and live style JSON.
+- All 8 headless flows and all 17 existing embed flows passed together (25 tests).
 - Visual inspection confirmed that the upstream variant renders the Maputnik layer editor, while the shadcn variant renders its independent property controls and no `.maputnik-layer-editor`. Both variants use the real MapLibre map without an iframe.
 - A deliberately incorrect style-JSON expectation failed at the expected assertion and was restored before the final positive runs.
 

@@ -73,6 +73,7 @@ describe("headless sample with focused shadcn composition", () => {
     await then(get.element("[data-slot='separator']")).shouldExist();
     await then(get.elementByTestId("shadcn:layer-editor")).shouldBeVisible();
     await then(get.element(".maputnik-layer-editor")).shouldNotExist();
+    await then(get.elementByTestId("shadcn:color:background-color")).shouldHaveValue("#e9ede5");
     await then(get.element(".maplibregl-canvas")).shouldHaveLength(1);
     await then(get.element("iframe")).shouldNotExist();
   });
@@ -81,6 +82,8 @@ describe("headless sample with focused shadcn composition", () => {
     await when.click("shadcn:layer:parks");
     await then(get.elementByTestId("shadcn:selected")).shouldContainText("parks");
     await then(get.elementByTestId("shadcn:layer-heading")).shouldContainText("parks");
+    await then(get.elementByTestId("shadcn:source-readonly")).shouldHaveValue("districts");
+    await then(get.elementByTestId("shadcn:source")).shouldNotExist();
     await then(get.element("[data-slot='switch']")).shouldExist();
     await when.click("shadcn:input:fill-antialias");
     await then(get.elementByTestId("shadcn:dirty")).shouldHaveText("Unsaved changes");
@@ -89,12 +92,25 @@ describe("headless sample with focused shadcn composition", () => {
   });
 
   test("shares the same edit, history, and repository save behavior", async () => {
-    await when.editShadcnBackground("#bb3355");
+    await when.pickShadcnBackground("#bb3355");
+    await then(get.element("[name='background-color']")).shouldHaveValue("#bb3355");
     await then(get.elementByTestId("shadcn:dirty")).shouldHaveText("Unsaved changes");
     await then(get.elementByTestId("shadcn:history")).shouldHaveText("History 2/2");
     await when.click("shadcn:save");
     await then(get.elementByTestId("shadcn:status")).shouldContainText("through the host repository adapter");
     await then(get.elementByTestId("shadcn:dirty")).shouldHaveText("Saved");
+  });
+
+  test("adds a layer through the accessible headless dialog", async () => {
+    await when.click("shadcn:add-layer");
+    await then(get.elementByTestId("shadcn:add-layer-modal")).shouldBeVisible();
+    await then(get.elementByTestId("shadcn:add-layer-source-readonly")).shouldHaveValue("districts");
+    await when.setValue("shadcn:add-layer-id", "new-fill-layer");
+    await when.click("shadcn:confirm-add-layer");
+    await then(get.elementByTestId("shadcn:add-layer-modal")).shouldNotExist();
+    await then(get.elementByTestId("shadcn:layer:new-fill-layer")).shouldBeVisible();
+    await then(get.elementByTestId("shadcn:layer-heading")).shouldContainText("new-fill-layer");
+    await then(get.elementByTestId("shadcn:dirty")).shouldHaveText("Unsaved changes");
   });
 
   test("exposes the live headless style through the shadcn tabs", async () => {

@@ -1,7 +1,7 @@
 import { useEffect, useState, type ComponentProps } from "react";
 import latest from "@maplibre/maplibre-gl-style-spec/dist/latest.json";
 import { Copy, RotateCcw, Trash2 } from "lucide-react";
-import type { LayerSpecification } from "../../../src/headless";
+import type { LayerSpecification, SourceSpecification } from "../../../src/headless";
 import { useEditorActions, useSelectedLayer, useStyle } from "../../../src/headless/all";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,8 @@ export function ShadcnLayerEditor() {
   const paintDefinitions = definitions[`paint_${layerType}`] ?? {};
   const layoutDefinitions = definitions[`layout_${layerType}`] ?? {};
   const sourceId = typeof editable.source === "string" ? editable.source : "";
+  const sourceIds = compatibleSourceIds(style.sources, layerType);
+  const sourceDefinition = sourceId ? style.sources[sourceId] : undefined;
   const sourceLayer = typeof editable["source-layer"] === "string" ? editable["source-layer"] as string : "";
   const layerMetadata = layer.metadata as Record<string, unknown> | undefined;
   const comment = typeof layerMetadata?.["maputnik:comment"] === "string"
@@ -109,12 +111,14 @@ export function ShadcnLayerEditor() {
         </Field>
         <Field label="Type"><Input value={layer.type} disabled /></Field>
         {"source" in layer && <Field label="Source">
-          <Select value={sourceId} onValueChange={value => updateTopLevel("source", value)}>
-            <SelectTrigger className="w-full" data-wd-key="shadcn:source"><SelectValue placeholder="Select source" /></SelectTrigger>
-            <SelectContent>{Object.keys(style.sources).map(id => <SelectItem key={id} value={id}>{id}</SelectItem>)}</SelectContent>
-          </Select>
+          {sourceIds.length <= 1
+            ? <Input value={sourceId} placeholder="No source available" disabled data-wd-key="shadcn:source-readonly" />
+            : <Select value={sourceId} onValueChange={value => updateTopLevel("source", value)}>
+              <SelectTrigger className="w-full" data-wd-key="shadcn:source"><SelectValue placeholder="Select source" /></SelectTrigger>
+              <SelectContent>{sourceIds.map(id => <SelectItem key={id} value={id}>{id}</SelectItem>)}</SelectContent>
+            </Select>}
         </Field>}
-        {"source" in layer && <Field label="Source layer">
+        {"source" in layer && sourceDefinition?.type === "vector" && <Field label="Source layer">
           <DraftInput value={sourceLayer} name="source-layer" placeholder="Optional vector source layer"
             onCommit={value => updateTopLevel("source-layer", value)} />
         </Field>}
@@ -215,6 +219,17 @@ function ScalarProperty({name, definition, value, onChange}: {
     </Select>;
   }
 
+  if (definition.type === "color") {
+    const pickerValue = htmlColor(String(value ?? ""));
+    return <div className="flex gap-2">
+      <DraftInput className="flex-1" value={value == null ? "" : String(value)} name={name}
+        wdKey={`shadcn:input:${name}`} onCommit={onChange} />
+      <Input className="w-11 shrink-0 p-1" type="color" name={`${name}-picker`} value={pickerValue ?? "#000000"}
+        disabled={!pickerValue} aria-label={`${humanize(name)} color picker`} data-wd-key={`shadcn:color:${name}`}
+        onChange={event => onChange(event.target.value)} />
+    </div>;
+  }
+
   const numeric = definition.type === "number";
   return <DraftInput value={value == null ? "" : String(value)} name={name} type={numeric ? "number" : "text"}
     wdKey={`shadcn:input:${name}`} onCommit={next => onChange(numeric ? numberOrUndefined(next) : next)} />;
@@ -281,4 +296,18 @@ function humanize(value: string): string {
   const words = value.split("-");
   const relevant = words.length > 1 ? words.slice(1) : words;
   return relevant.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+}
+
+function htmlColor(value: string): string | null {
+  if (/^#[0-9a-f]{6}$/i.test(value)) return value.toLowerCase();
+  const short = value.match(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i);
+  return short ? `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}`.toLowerCase() : null;
+}
+
+function compatibleSourceIds(sources: Record<string, SourceSpecification>, type: LayerSpecification["type"]): string[] {
+  return Object.entries(sources).filter(([, source]) => {
+    if (type === "hillshade" || type === "color-relief") return source.type === "raster-dem";
+    if (type === "raster") return source.type === "raster" || source.type === "image" || source.type === "video";
+    return source.type === "vector" || source.type === "geojson";
+  }).map(([id]) => id);
 }

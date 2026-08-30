@@ -1,4 +1,5 @@
-import { Braces, ExternalLink, Layers3, Redo2, Save, Undo2 } from "lucide-react";
+import { useState } from "react";
+import { Braces, ExternalLink, Layers3, Plus, Redo2, Save, Undo2 } from "lucide-react";
 import {
   HeadlessMapPreview, MaputnikUIRoot, useDirty, useHistory,
   useLayers, useSelectedLayerId, useStyle, useValidation,
@@ -7,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AddLayerDialog } from "./AddLayerDialog";
 import { SampleEditorProvider } from "./SampleEditorProvider";
 import { ShadcnLayerEditor } from "./ShadcnLayerEditor";
 import { useSampleEditor } from "./use-sample-editor";
@@ -23,6 +25,7 @@ function ShadcnEditor() {
   const dirty = useDirty();
   const history = useHistory();
   const validation = useValidation();
+  const [addLayerOpen, setAddLayerOpen] = useState(false);
 
   return <main className="min-h-screen bg-muted/40 text-foreground" data-wd-key="shadcn:root">
     <header className="border-b bg-background">
@@ -66,9 +69,13 @@ function ShadcnEditor() {
         </Card>
 
         <Card size="sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Layers3 className="size-4" />Layers</CardTitle>
-            <CardDescription>Custom list backed by useLayers()</CardDescription>
+          <CardHeader className="grid grid-cols-[1fr_auto]">
+            <div>
+              <CardTitle className="flex items-center gap-2"><Layers3 className="size-4" />Layers</CardTitle>
+              <CardDescription>Custom list backed by useLayers()</CardDescription>
+            </div>
+            <Button variant="outline" size="icon-sm" aria-label="Add layer" data-wd-key="shadcn:add-layer"
+              onClick={() => setAddLayerOpen(true)}><Plus /></Button>
           </CardHeader>
           <CardContent className="grid gap-1">
             {layers.map(layer => <Button key={layer.id} variant={layer.id === selectedLayerId ? "secondary" : "ghost"}
@@ -114,5 +121,6 @@ function ShadcnEditor() {
       <span data-wd-key="shadcn:history">History {history.index + 1}/{history.length}</span>
       <span>{validation.length} issues</span>
     </footer>
+    <AddLayerDialog open={addLayerOpen} onClose={() => setAddLayerOpen(false)} />
   </main>;
 }
