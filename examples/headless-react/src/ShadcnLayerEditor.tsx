@@ -17,6 +17,8 @@ import { Textarea } from "@/components/ui/textarea";
 type PropertyDefinition = {
   default?: unknown;
   doc?: string;
+  maximum?: number;
+  minimum?: number;
   type?: string;
   values?: Record<string, unknown>;
 };
@@ -232,6 +234,7 @@ function ScalarProperty({name, definition, value, onChange}: {
 
   const numeric = definition.type === "number";
   return <DraftInput value={value == null ? "" : String(value)} name={name} type={numeric ? "number" : "text"}
+    min={numeric ? definition.minimum : undefined} max={numeric ? definition.maximum : undefined} step={numeric ? "any" : undefined}
     wdKey={`shadcn:input:${name}`} onCommit={next => onChange(numeric ? numberOrUndefined(next) : next)} />;
 }
 
@@ -247,7 +250,10 @@ function DraftInput({value, onCommit, wdKey, ...props}: {
   const [draft, setDraft] = useState(String(value));
   useEffect(() => setDraft(String(value)), [value]);
   return <Input {...props} value={draft} data-wd-key={wdKey} onChange={event => setDraft(event.target.value)}
-    onBlur={() => { if (draft !== String(value)) onCommit(draft); }}
+    onBlur={event => {
+      if (!event.currentTarget.checkValidity()) { setDraft(String(value)); return; }
+      if (draft !== String(value)) onCommit(draft);
+    }}
     onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); }} />;
 }
 

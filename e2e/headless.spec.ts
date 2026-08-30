@@ -74,6 +74,9 @@ describe("headless sample with focused shadcn composition", () => {
     await then(get.elementByTestId("shadcn:layer-editor")).shouldBeVisible();
     await then(get.element(".maputnik-layer-editor")).shouldNotExist();
     await then(get.elementByTestId("shadcn:color:background-color")).shouldHaveValue("#e9ede5");
+    await then(get.element("[name='background-opacity']")).shouldHaveAttribute("min", "0");
+    await then(get.element("[name='background-opacity']")).shouldHaveAttribute("max", "1");
+    await then(get.element("[name='background-opacity']")).shouldHaveAttribute("step", "any");
     await then(get.element(".maplibregl-canvas")).shouldHaveLength(1);
     await then(get.element("iframe")).shouldNotExist();
   });
@@ -101,9 +104,25 @@ describe("headless sample with focused shadcn composition", () => {
     await then(get.elementByTestId("shadcn:dirty")).shouldHaveText("Saved");
   });
 
+  test("accepts fractional opacity values and rejects values outside the style spec range", async () => {
+    await when.fillByName("background-opacity", "0.45");
+    await when.focus("shadcn:layer-id");
+    await then(get.element("[name='background-opacity']")).shouldHaveValue("0.45");
+    await when.fillByName("background-opacity", "2");
+    await when.focus("shadcn:layer-id");
+    await then(get.element("[name='background-opacity']")).shouldHaveValue("0.45");
+    await when.click("shadcn:tab:json");
+    await then(get.elementByTestId("shadcn:json")).shouldContainText("\"background-opacity\": 0.45");
+  });
+
   test("adds a layer through the accessible headless dialog", async () => {
     await when.click("shadcn:add-layer");
     await then(get.elementByTestId("shadcn:add-layer-modal")).shouldBeVisible();
+    await when.click("shadcn:add-layer-type");
+    const dialogSelect = get.elementByTestId("shadcn:add-layer-modal").locator("[data-slot='select-content']");
+    await then(dialogSelect).shouldBeVisible();
+    await then(dialogSelect).shouldHaveCss("z-index", "3101");
+    await when.click("shadcn:add-layer-type-option:fill");
     await then(get.elementByTestId("shadcn:add-layer-source-readonly")).shouldHaveValue("districts");
     await when.setValue("shadcn:add-layer-id", "new-fill-layer");
     await when.click("shadcn:confirm-add-layer");

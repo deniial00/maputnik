@@ -118,6 +118,7 @@ export class Assertable<T> {
   shouldHaveText = (text: string) => expect(this.locator().first()).toHaveText(text);
   shouldHaveLength = (length: number) => expect(this.locator()).toHaveCount(length);
   shouldHaveCss = (property: string, value: string) => expect(this.locator().first()).toHaveCSS(property, value);
+  shouldHaveAttribute = (name: string, value: string) => expect(this.locator().first()).toHaveAttribute(name, value);
 
   // Value assertions (auto-retrying for Query targets).
   shouldEqual = (value: any) => this.assertValue((actual) => expect(actual).toBe(value));

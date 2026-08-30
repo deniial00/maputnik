@@ -92,8 +92,8 @@ Verified on August 30, 2026:
 - Original web app, full embed host, and headless sample production builds passed.
 - ESLint, upstream SCSS linting, and `git diff --check` passed.
 - 58 unit tests passed across 10 files, including 8 focused headless-core tests.
-- 8 headless browser flows passed across both variants: upstream layout composition, edits/history/save, clean style-library loading, selected shadcn primitives, custom layer selection, shared persistence behavior, accessible layer creation, and live style JSON.
-- All 8 headless flows and all 17 existing embed flows passed together (25 tests).
+- 9 headless browser flows passed across both variants: upstream layout composition, edits/history/save, clean style-library loading, selected shadcn primitives, custom layer selection, shared persistence behavior, numeric style-spec constraints, accessible layer creation, and live style JSON.
+- All 9 headless flows and all 17 existing embed flows passed together (26 tests).
 - Visual inspection confirmed that the upstream variant renders the Maputnik layer editor, while the shadcn variant renders its independent property controls and no `.maputnik-layer-editor`. Both variants use the real MapLibre map without an iframe.
 - A deliberately incorrect style-JSON expectation failed at the expected assertion and was restored before the final positive runs.
 

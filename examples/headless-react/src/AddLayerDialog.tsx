@@ -25,6 +25,7 @@ export function AddLayerDialog({open, onClose}: {open: boolean; onClose(): void}
   const [source, setSource] = useState("");
   const [sourceLayer, setSourceLayer] = useState("");
   const [error, setError] = useState("");
+  const [dialogNode, setDialogNode] = useState<HTMLElement | null>(null);
   const sources = useMemo(() => eligibleSources(style.sources, type), [style.sources, type]);
 
   useEffect(() => {
@@ -68,7 +69,7 @@ export function AddLayerDialog({open, onClose}: {open: boolean; onClose(): void}
     underlayStyle={{zIndex: 3000, padding: "24px"}}
     dialogStyle={{margin: "auto"}}
   >
-    <section className="w-[min(92vw,480px)] rounded-xl bg-background p-5 text-foreground shadow-2xl ring-1 ring-foreground/10"
+    <section ref={setDialogNode} className="w-[min(92vw,480px)] rounded-xl bg-background p-5 text-foreground shadow-2xl ring-1 ring-foreground/10"
       data-wd-key="shadcn:add-layer-modal">
       <header className="mb-5 flex items-start gap-3">
         <div className="min-w-0 flex-1">
@@ -88,7 +89,10 @@ export function AddLayerDialog({open, onClose}: {open: boolean; onClose(): void}
           <Label>Type</Label>
           <Select value={type} onValueChange={value => { setType(value as LayerType); setError(""); }}>
             <SelectTrigger className="w-full" data-wd-key="shadcn:add-layer-type"><SelectValue /></SelectTrigger>
-            <SelectContent>{layerTypes.map(value => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent>
+            <SelectContent className="z-[3101]" portalContainer={dialogNode}>
+              {layerTypes.map(value => <SelectItem key={value} value={value}
+                data-wd-key={`shadcn:add-layer-type-option:${value}`}>{value}</SelectItem>)}
+            </SelectContent>
           </Select>
         </div>
 
@@ -98,7 +102,9 @@ export function AddLayerDialog({open, onClose}: {open: boolean; onClose(): void}
             ? <Input value={sources[0]} disabled data-wd-key="shadcn:add-layer-source-readonly" />
             : <Select value={source} onValueChange={setSource}>
               <SelectTrigger className="w-full" data-wd-key="shadcn:add-layer-source"><SelectValue placeholder="Select source" /></SelectTrigger>
-              <SelectContent>{sources.map(value => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent>
+              <SelectContent className="z-[3101]" portalContainer={dialogNode}>
+                {sources.map(value => <SelectItem key={value} value={value}>{value}</SelectItem>)}
+              </SelectContent>
             </Select>}
           {!sources.length && <p className="text-xs text-destructive">No compatible sources are available.</p>}
         </div>}
