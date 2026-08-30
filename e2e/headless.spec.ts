@@ -61,23 +61,35 @@ describe("headless sample with focused shadcn composition", () => {
     await then(get.pageErrors()).shouldDeepNestedInclude([]);
   });
 
-  test("uses only the selected shadcn primitives around real Maputnik components", async () => {
+  test("uses shadcn fields instead of the upstream property editor", async () => {
     await then(get.element("[data-slot='button']")).shouldExist();
     await then(get.element("[data-slot='card']")).shouldExist();
     await then(get.element("[data-slot='badge']")).shouldExist();
     await then(get.element("[data-slot='tabs']")).shouldExist();
+    await then(get.element("[data-slot='input']")).shouldExist();
+    await then(get.element("[data-slot='label']")).shouldExist();
+    await then(get.element("[data-slot='textarea']")).shouldExist();
+    await then(get.element("[data-slot='select-trigger']")).shouldExist();
+    await then(get.element("[data-slot='separator']")).shouldExist();
+    await then(get.elementByTestId("shadcn:layer-editor")).shouldBeVisible();
+    await then(get.element(".maputnik-layer-editor")).shouldNotExist();
     await then(get.element(".maplibregl-canvas")).shouldHaveLength(1);
     await then(get.element("iframe")).shouldNotExist();
   });
 
-  test("custom layer controls select the Maputnik layer editor", async () => {
-    await when.click("shadcn:layer:water");
-    await then(get.elementByTestId("shadcn:selected")).shouldContainText("water");
-    await then(get.element(".maputnik-layer-editor h2")).shouldContainText("water");
+  test("custom layer controls select the headless shadcn property editor", async () => {
+    await when.click("shadcn:layer:parks");
+    await then(get.elementByTestId("shadcn:selected")).shouldContainText("parks");
+    await then(get.elementByTestId("shadcn:layer-heading")).shouldContainText("parks");
+    await then(get.element("[data-slot='switch']")).shouldExist();
+    await when.click("shadcn:input:fill-antialias");
+    await then(get.elementByTestId("shadcn:dirty")).shouldHaveText("Unsaved changes");
+    await when.click("shadcn:tab:json");
+    await then(get.elementByTestId("shadcn:json")).shouldContainText("\"fill-antialias\": false");
   });
 
   test("shares the same edit, history, and repository save behavior", async () => {
-    await when.editBackground("#bb3355");
+    await when.editShadcnBackground("#bb3355");
     await then(get.elementByTestId("shadcn:dirty")).shouldHaveText("Unsaved changes");
     await then(get.elementByTestId("shadcn:history")).shouldHaveText("History 2/2");
     await when.click("shadcn:save");

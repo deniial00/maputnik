@@ -12,6 +12,10 @@ export class HeadlessDriver {
       await this.helper.when.fillByName("background-color", color);
       await this.helper.when.focus("layer-editor.layer-id.input");
     },
+    editShadcnBackground: async (color: string) => {
+      await this.helper.when.fillByName("background-color", color);
+      await this.helper.when.focus("shadcn:layer-id");
+    },
   };
   get = this.helper.get;
 }

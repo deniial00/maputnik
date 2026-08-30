@@ -1,6 +1,6 @@
 import { Braces, ExternalLink, Layers3, Redo2, Save, Undo2 } from "lucide-react";
 import {
-  HeadlessLayerEditor, HeadlessMapPreview, MaputnikUIRoot, useDirty, useHistory,
+  HeadlessMapPreview, MaputnikUIRoot, useDirty, useHistory,
   useLayers, useSelectedLayerId, useStyle, useValidation,
 } from "../../../src/headless/all";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SampleEditorProvider } from "./SampleEditorProvider";
+import { ShadcnLayerEditor } from "./ShadcnLayerEditor";
 import { useSampleEditor } from "./use-sample-editor";
 
 export function ShadcnApp() {
@@ -82,7 +83,7 @@ function ShadcnEditor() {
       <Card className="min-w-0">
         <CardHeader className="border-b">
           <CardTitle>Style editor</CardTitle>
-          <CardDescription>Maputnik editor components embedded inside shadcn composition</CardDescription>
+          <CardDescription>Headless fields rendered with shadcn; Maputnik supplies only the map renderer</CardDescription>
         </CardHeader>
         <CardContent className="min-w-0">
           <Tabs defaultValue="editor">
@@ -91,12 +92,12 @@ function ShadcnEditor() {
               <TabsTrigger value="json" data-wd-key="shadcn:tab:json"><Braces />Style JSON</TabsTrigger>
             </TabsList>
             <TabsContent value="editor">
-              <MaputnikUIRoot className="shadcn-maputnik-runtime">
-                <div className="shadcn-runtime-grid">
-                  <div className="shadcn-runtime-editor"><HeadlessLayerEditor /></div>
+              <div className="shadcn-runtime-grid">
+                <div className="shadcn-runtime-editor"><ShadcnLayerEditor /></div>
+                <MaputnikUIRoot className="shadcn-maputnik-runtime">
                   <div className="shadcn-runtime-map"><HeadlessMapPreview transformStyle={value => value} /></div>
-                </div>
-              </MaputnikUIRoot>
+                </MaputnikUIRoot>
+              </div>
             </TabsContent>
             <TabsContent value="json">
               <pre className="max-h-[680px] overflow-auto rounded-lg bg-zinc-950 p-4 text-xs text-zinc-100"
